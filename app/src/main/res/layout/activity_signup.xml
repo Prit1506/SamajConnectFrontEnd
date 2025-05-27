@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/screen_padding"
+    tools:context=".login_activity">
+
+    <!-- Logo -->
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="0dp"
+        android:layout_height="200dp"
+        android:layout_marginTop="@dimen/signup_logo_margin_top"
+        android:scaleType="centerInside"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_percent="0.12"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/logo_2" />
+
+    <!-- Scrollable Form Container -->
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/signup_form_margin_top"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/imageView">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="@dimen/form_bottom_padding">
+
+            <!-- Name Label -->
+            <TextView
+                android:id="@+id/textView4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Name"
+                android:textColor="#000000"
+                android:textSize="@dimen/label_text_size"
+                android:textStyle="bold"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="16sp"
+                app:autoSizeMaxTextSize="22sp" />
+
+            <!-- Name Input -->
+            <EditText
+                android:id="@+id/editTextText"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/input_height"
+                android:layout_marginTop="@dimen/signup_input_margin_top"
+                android:background="@drawable/edittext_background"
+                android:ems="10"
+                android:hint="Enter your Name"
+                android:inputType="textPersonName"
+                android:padding="@dimen/input_padding"
+                android:textSize="@dimen/input_text_size"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="14sp"
+                app:autoSizeMaxTextSize="18sp" />
+
+            <!-- Email Label -->
+            <TextView
+                android:id="@+id/textView3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/signup_label_margin_top"
+                android:text="Email Id"
+                android:textColor="#000000"
+                android:textSize="@dimen/label_text_size"
+                android:textStyle="bold"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="16sp"
+                app:autoSizeMaxTextSize="22sp" />
+
+            <!-- Email Input -->
+            <EditText
+                android:id="@+id/editTextText2"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/input_height"
+                android:layout_marginTop="@dimen/signup_input_margin_top"
+                android:background="@drawable/edittext_background"
+                android:ems="10"
+                android:hint="Enter your email"
+                android:inputType="textEmailAddress"
+                android:padding="@dimen/input_padding"
+                android:textSize="@dimen/input_text_size"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="14sp"
+                app:autoSizeMaxTextSize="18sp" />
+
+            <!-- Password Label -->
+            <TextView
+                android:id="@+id/textView5"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/signup_label_margin_top"
+                android:text="Password"
+                android:textColor="#000000"
+                android:textSize="@dimen/label_text_size"
+                android:textStyle="bold"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="16sp"
+                app:autoSizeMaxTextSize="22sp" />
+
+            <!-- Password Input -->
+            <EditText
+                android:id="@+id/editTextText1"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/input_height"
+                android:layout_marginTop="@dimen/signup_input_margin_top"
+                android:background="@drawable/edittext_background"
+                android:ems="10"
+                android:hint="Enter your Password"
+                android:inputType="textPassword"
+                android:padding="@dimen/input_padding"
+                android:textSize="@dimen/input_text_size"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="14sp"
+                app:autoSizeMaxTextSize="18sp" />
+
+            <!-- Retype Password Label -->
+            <TextView
+                android:id="@+id/textView7"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/signup_label_margin_top"
+                android:text="Retype Password"
+                android:textColor="#000000"
+                android:textSize="@dimen/label_text_size"
+                android:textStyle="bold"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="16sp"
+                app:autoSizeMaxTextSize="22sp" />
+
+            <!-- Retype Password Input -->
+            <EditText
+                android:id="@+id/editTextText3"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/input_height"
+                android:layout_marginTop="@dimen/signup_input_margin_top"
+                android:background="@drawable/edittext_background"
+                android:ems="10"
+                android:hint="Retype your Password"
+                android:inputType="textPassword"
+                android:padding="@dimen/input_padding"
+                android:textSize="@dimen/input_text_size"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="14sp"
+                app:autoSizeMaxTextSize="18sp" />
+
+            <!-- Sign Up Button -->
+            <Button
+                android:id="@+id/button3"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginTop="@dimen/signup_button_margin_top"
+                android:background="@drawable/green_button"
+                android:minHeight="48dp"
+                android:padding="@dimen/button_padding"
+                android:text="SIGN UP"
+                android:textColor="#000000"
+                android:textSize="@dimen/button_text_size"
+                android:textStyle="bold"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="14sp"
+                app:autoSizeMaxTextSize="20sp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
