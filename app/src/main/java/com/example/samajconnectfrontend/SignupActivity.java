@@ -18,7 +18,7 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
-public class signup extends AppCompatActivity {
+public class SignupActivity extends AppCompatActivity {
 
     private EditText nameEditText, emailEditText, passwordEditText, confirmPasswordEditText;
     private Button signupButton;
@@ -83,7 +83,7 @@ public class signup extends AppCompatActivity {
         } catch (JSONException e) {
             progressDialog.dismiss();
             Log.e(TAG, "Error creating JSON body: " + e.getMessage());
-            Toast.makeText(signup.this, "Error preparing request", Toast.LENGTH_SHORT).show();
+            Toast.makeText(SignupActivity.this, "Error preparing request", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -97,13 +97,13 @@ public class signup extends AppCompatActivity {
                         boolean success = response.getBoolean("success");
                         String message = response.getString("message");
                         Log.d(TAG, "Signup response: " + response.toString());
-                        Toast.makeText(signup.this, message, Toast.LENGTH_LONG).show();
+                        Toast.makeText(SignupActivity.this, message, Toast.LENGTH_LONG).show();
                         if (success) {
                             finish();
                         }
                     } catch (JSONException e) {
                         Log.e(TAG, "Error parsing response: " + e.getMessage());
-                        Toast.makeText(signup.this, "Unexpected response from server", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SignupActivity.this, "Unexpected response from server", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
@@ -151,6 +151,6 @@ public class signup extends AppCompatActivity {
             Log.e(TAG, "Error parsing response (HTTP " + statusCode + "): " + e.getMessage());
         }
 
-        Toast.makeText(signup.this, errorMessage, Toast.LENGTH_LONG).show();
+        Toast.makeText(SignupActivity.this, errorMessage, Toast.LENGTH_LONG).show();
     }
 }

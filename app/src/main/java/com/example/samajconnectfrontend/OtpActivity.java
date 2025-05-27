@@ -394,14 +394,14 @@ public class OtpActivity extends AppCompatActivity {
     }
 
     private void navigateToLogin() {
-        Intent intent = new Intent(OtpActivity.this, login_activity.class);
+        Intent intent = new Intent(OtpActivity.this, LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
     }
 
     private void navigateToSignup() {
-        Intent intent = new Intent(OtpActivity.this, signup.class);
+        Intent intent = new Intent(OtpActivity.this, SignupActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

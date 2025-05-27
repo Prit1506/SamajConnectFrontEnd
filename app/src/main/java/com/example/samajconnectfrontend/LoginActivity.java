@@ -23,7 +23,7 @@ import com.android.volley.toolbox.Volley;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class login_activity extends AppCompatActivity {
+public class LoginActivity extends AppCompatActivity {
 
     private EditText emailEditText, passwordEditText;
     private Button loginButton;
@@ -62,7 +62,7 @@ public class login_activity extends AppCompatActivity {
         loginButton.setOnClickListener(v -> attemptLogin());
 
         forgotPasswordTextView.setOnClickListener(v -> {
-            Intent intent = new Intent(login_activity.this, forgotpassword.class);
+            Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
             startActivity(intent);
         });
     }
@@ -144,7 +144,7 @@ public class login_activity extends AppCompatActivity {
                 saveUserData(token, userObject);
                 Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
 
-                Intent intent = new Intent(login_activity.this, MainActivity.class);
+                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                 startActivity(intent);
                 finish();
             } else {

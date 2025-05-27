@@ -8,7 +8,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-public class intro_activity extends AppCompatActivity {
+public class IntroActivity extends AppCompatActivity {
     private static final String TAG = "IntroActivity";
 
     @Override
@@ -22,7 +22,7 @@ public class intro_activity extends AppCompatActivity {
         loginButton.setOnClickListener(v -> {
             Log.d(TAG, "Login button clicked");
             try {
-                startActivity(new Intent(intro_activity.this, login_activity.class));
+                startActivity(new Intent(IntroActivity.this, LoginActivity.class));
             } catch (Exception e) {
                 Log.e(TAG, "Error navigating to LoginActivity", e);
                 Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -32,7 +32,7 @@ public class intro_activity extends AppCompatActivity {
         signupButton.setOnClickListener(v -> {
             Log.d(TAG, "Sign Up button clicked");
             try {
-                startActivity(new Intent(intro_activity.this, signup.class));
+                startActivity(new Intent(IntroActivity.this, SignupActivity.class));
             } catch (Exception e) {
                 Log.e(TAG, "Error navigating to SignupActivity", e);
                 Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
