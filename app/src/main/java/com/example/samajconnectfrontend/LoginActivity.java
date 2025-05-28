@@ -143,7 +143,7 @@ public class LoginActivity extends AppCompatActivity {
                 saveUserData(token, userObject);
                 Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
 
-                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                Intent intent = new Intent(LoginActivity.this, DashboardActivity.class);
                 startActivity(intent);
                 finish();
             } else {
