@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Patterns;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -26,6 +27,7 @@ public class SignupActivity extends AppCompatActivity {
     private static final String TAG = "SignupActivity";
 
     private EditText nameEditText, emailEditText, passwordEditText, confirmPasswordEditText;
+    private CheckBox adminCheckBox;
     private Button registerButton;
     private RequestQueue requestQueue;
 
@@ -47,6 +49,7 @@ public class SignupActivity extends AppCompatActivity {
         emailEditText = findViewById(R.id.editTextText2);
         passwordEditText = findViewById(R.id.editTextText1);
         confirmPasswordEditText = findViewById(R.id.editTextText3);
+        adminCheckBox = findViewById(R.id.checkBox);
         registerButton = findViewById(R.id.button3);
     }
 
@@ -59,6 +62,7 @@ public class SignupActivity extends AppCompatActivity {
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString();
         String confirmPassword = confirmPasswordEditText.getText().toString();
+        boolean isAdmin = adminCheckBox.isChecked();
 
         clearErrors();
 
@@ -67,7 +71,7 @@ public class SignupActivity extends AppCompatActivity {
         }
 
         setLoadingState(true);
-        sendSignupRequest(name, email, password);
+        sendSignupRequest(name, email, password, isAdmin);
     }
 
     private void clearErrors() {
@@ -118,14 +122,16 @@ public class SignupActivity extends AppCompatActivity {
         emailEditText.setEnabled(!isLoading);
         passwordEditText.setEnabled(!isLoading);
         confirmPasswordEditText.setEnabled(!isLoading);
+        adminCheckBox.setEnabled(!isLoading);
     }
 
-    private void sendSignupRequest(String name, String email, String password) {
+    private void sendSignupRequest(String name, String email, String password, boolean isAdmin) {
         JSONObject data = new JSONObject();
         try {
             data.put("name", name);
             data.put("email", email);
             data.put("password", password);
+            data.put("isAdmin", isAdmin);  // Send admin flag to backend
         } catch (JSONException e) {
             Toast.makeText(this, "Error creating JSON data", Toast.LENGTH_SHORT).show();
             setLoadingState(false);
@@ -149,7 +155,6 @@ public class SignupActivity extends AppCompatActivity {
 
         request.setRetryPolicy(new DefaultRetryPolicy(150000, 0, 1.0f));
         requestQueue.add(request);
-
     }
 
     private void handleSuccessResponse(JSONObject response, String name, String email, String password) {
