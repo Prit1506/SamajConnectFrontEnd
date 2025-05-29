@@ -188,6 +188,7 @@ public class SignupActivity extends AppCompatActivity {
                 error -> Toast.makeText(this, "Failed to load samajs", Toast.LENGTH_SHORT).show()
         );
 
+        request.setRetryPolicy(new DefaultRetryPolicy(150000, 0, 1.0f));
         requestQueue.add(request);
     }
 
