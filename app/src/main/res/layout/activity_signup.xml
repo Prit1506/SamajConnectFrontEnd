@@ -39,11 +39,34 @@
             android:orientation="vertical"
             android:paddingBottom="@dimen/form_bottom_padding">
 
+            <!-- User Type Dropdown Label -->
+            <TextView
+                android:id="@+id/textViewUserType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="User Type"
+                android:textColor="#000000"
+                android:textSize="@dimen/label_text_size"
+                android:textStyle="bold"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="16sp"
+                app:autoSizeMaxTextSize="22sp" />
+
+            <!-- User Type Dropdown -->
+            <Spinner
+                android:id="@+id/spinnerUserType"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/input_height"
+                android:layout_marginTop="@dimen/signup_input_margin_top"
+                android:background="@drawable/edittext_background"
+                android:padding="@dimen/input_padding" />
+
             <!-- Name Label -->
             <TextView
                 android:id="@+id/textView4"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/signup_label_margin_top"
                 android:text="Name"
                 android:textColor="#000000"
                 android:textSize="@dimen/label_text_size"
@@ -158,20 +181,167 @@
                 app:autoSizeMinTextSize="14sp"
                 app:autoSizeMaxTextSize="18sp" />
 
-
-            <CheckBox
-                android:id="@+id/checkBox"
-                android:width="200dp"
-                android:height="@dimen/input_height"
-                android:layout_marginTop="@dimen/signup_input_margin_top"
+            <!-- Dynamic Container for Admin/User specific fields -->
+            <LinearLayout
+                android:id="@+id/layoutDynamicFields"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textStyle="bold"
-                android:padding="@dimen/input_padding"
-                android:layout_marginVertical="15dp"
-                android:textSize="18sp"
-                android:background="@drawable/button_background"
-                android:text="Admin" />
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- Admin Fields (Create Samaj) -->
+                <LinearLayout
+                    android:id="@+id/layoutAdminFields"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <!-- Samaj Name Label -->
+                    <TextView
+                        android:id="@+id/textViewSamajName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/signup_label_margin_top"
+                        android:text="Samaj Name"
+                        android:textColor="#000000"
+                        android:textSize="@dimen/label_text_size"
+                        android:textStyle="bold"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="16sp"
+                        app:autoSizeMaxTextSize="22sp" />
+
+                    <!-- Samaj Name Input -->
+                    <EditText
+                        android:id="@+id/editTextSamajName"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/input_height"
+                        android:layout_marginTop="@dimen/signup_input_margin_top"
+                        android:background="@drawable/edittext_background"
+                        android:hint="Enter Samaj Name"
+                        android:inputType="text"
+                        android:padding="@dimen/input_padding"
+                        android:textSize="@dimen/input_text_size" />
+
+                    <!-- Samaj Description Label -->
+                    <TextView
+                        android:id="@+id/textViewSamajDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/signup_label_margin_top"
+                        android:text="Samaj Description"
+                        android:textColor="#000000"
+                        android:textSize="@dimen/label_text_size"
+                        android:textStyle="bold"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="16sp"
+                        app:autoSizeMaxTextSize="22sp" />
+
+                    <!-- Samaj Description Input -->
+                    <EditText
+                        android:id="@+id/editTextSamajDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp"
+                        android:layout_marginTop="@dimen/signup_input_margin_top"
+                        android:background="@drawable/edittext_background"
+                        android:gravity="top"
+                        android:hint="Enter Samaj Description"
+                        android:inputType="textMultiLine"
+                        android:maxLines="4"
+                        android:padding="@dimen/input_padding"
+                        android:textSize="@dimen/input_text_size" />
+
+                    <!-- Samaj Rules Label -->
+                    <TextView
+                        android:id="@+id/textViewSamajRules"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/signup_label_margin_top"
+                        android:text="Samaj Rules"
+                        android:textColor="#000000"
+                        android:textSize="@dimen/label_text_size"
+                        android:textStyle="bold"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="16sp"
+                        app:autoSizeMaxTextSize="22sp" />
+
+                    <!-- Samaj Rules Input -->
+                    <EditText
+                        android:id="@+id/editTextSamajRules"
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp"
+                        android:layout_marginTop="@dimen/signup_input_margin_top"
+                        android:background="@drawable/edittext_background"
+                        android:gravity="top"
+                        android:hint="Enter Samaj Rules"
+                        android:inputType="textMultiLine"
+                        android:maxLines="4"
+                        android:padding="@dimen/input_padding"
+                        android:textSize="@dimen/input_text_size" />
+
+                    <!-- Samaj Established Date Label -->
+                    <TextView
+                        android:id="@+id/textViewEstablishedDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/signup_label_margin_top"
+                        android:text="Established Date"
+                        android:textColor="#000000"
+                        android:textSize="@dimen/label_text_size"
+                        android:textStyle="bold"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="16sp"
+                        app:autoSizeMaxTextSize="22sp" />
+
+                    <!-- Samaj Established Date Input -->
+                    <EditText
+                        android:id="@+id/editTextEstablishedDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/input_height"
+                        android:layout_marginTop="@dimen/signup_input_margin_top"
+                        android:background="@drawable/edittext_background"
+                        android:focusable="false"
+                        android:hint="Select Established Date"
+                        android:inputType="none"
+                        android:padding="@dimen/input_padding"
+                        android:textSize="@dimen/input_text_size" />
+
+                </LinearLayout>
+
+                <!-- Normal User Fields (Join Samaj) -->
+                <LinearLayout
+                    android:id="@+id/layoutUserFields"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <!-- Select Samaj Label -->
+                    <TextView
+                        android:id="@+id/textViewSelectSamaj"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/signup_label_margin_top"
+                        android:text="Select Samaj to Join"
+                        android:textColor="#000000"
+                        android:textSize="@dimen/label_text_size"
+                        android:textStyle="bold"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="16sp"
+                        app:autoSizeMaxTextSize="22sp" />
+
+                    <!-- Select Samaj Dropdown -->
+                    <Spinner
+                        android:id="@+id/spinnerSelectSamaj"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/input_height"
+                        android:layout_marginTop="@dimen/signup_input_margin_top"
+                        android:background="@drawable/edittext_background"
+                        android:padding="@dimen/input_padding" />
+
+                </LinearLayout>
+
+            </LinearLayout>
 
             <Button
                 android:id="@+id/button3"
