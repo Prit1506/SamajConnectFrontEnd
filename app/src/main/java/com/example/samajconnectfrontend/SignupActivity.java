@@ -67,9 +67,11 @@ public class SignupActivity extends AppCompatActivity {
         initializeViews();
         setupSpinners();
         setupClickListeners();
-        loadAvailableSamajs();
 
         requestQueue = Volley.newRequestQueue(this);
+
+        loadAvailableSamajs();
+
     }
 
     private void initializeViews() {
