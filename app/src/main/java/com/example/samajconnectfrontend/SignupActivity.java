@@ -3,6 +3,7 @@ package com.example.samajconnectfrontend;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.AdapterView;
@@ -53,6 +54,7 @@ public class SignupActivity extends AppCompatActivity {
     private RequestQueue requestQueue;
     private List<JSONObject> availableSamajs = new ArrayList<>();
     private Calendar selectedDate = Calendar.getInstance();
+    private boolean isLoadingSamajs = false; // Flag to prevent multiple API calls
 
     private static final String SIGNUP_URL = ApiHelper.getBaseUrl() + "auth/register";
     private static final String CREATE_SAMAJ_URL = ApiHelper.getBaseUrl() + "samaj/create";
@@ -70,8 +72,8 @@ public class SignupActivity extends AppCompatActivity {
 
         requestQueue = Volley.newRequestQueue(this);
 
+        // Load samajs only once when activity is created
         loadAvailableSamajs();
-
     }
 
     private void initializeViews() {
@@ -130,7 +132,11 @@ public class SignupActivity extends AppCompatActivity {
                 dynamicFieldsLayout.setVisibility(View.VISIBLE);
                 userFieldsLayout.setVisibility(View.VISIBLE);
                 registerButton.setText("JOIN SAMAJ & SIGN UP");
-                loadAvailableSamajs();
+                // Only reload if samajs list is empty and not currently loading
+                if (availableSamajs.isEmpty() && !isLoadingSamajs) {
+                    Log.d(TAG, "Reloading samajs for Individual selection");
+                    loadAvailableSamajs();
+                }
                 break;
             default: // Select User Type
                 registerButton.setText("SIGN UP");
@@ -140,7 +146,6 @@ public class SignupActivity extends AppCompatActivity {
 
     private void setupClickListeners() {
         registerButton.setOnClickListener(v -> attemptRegistration());
-
         establishedDateEditText.setOnClickListener(v -> showDatePicker());
     }
 
@@ -160,35 +165,110 @@ public class SignupActivity extends AppCompatActivity {
     }
 
     private void loadAvailableSamajs() {
-        JsonArrayRequest request = new JsonArrayRequest(
+        // Prevent multiple simultaneous API calls
+        if (isLoadingSamajs) {
+            Log.d(TAG, "Already loading samajs, skipping duplicate request");
+            return;
+        }
+
+        isLoadingSamajs = true;
+        Log.d(TAG, "Loading available samajs from: " + GET_SAMAJS_URL);
+
+        // Changed to JsonObjectRequest since server returns JSONObject
+        JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.GET,
                 GET_SAMAJS_URL,
                 null,
                 response -> {
+                    Log.d(TAG, "Response received: " + response.toString());
                     availableSamajs.clear();
                     List<String> samajNames = new ArrayList<>();
                     samajNames.add("Select Samaj");
 
                     try {
-                        for (int i = 0; i < response.length(); i++) {
-                            JSONObject samaj = response.getJSONObject(i);
-                            availableSamajs.add(samaj);
-                            samajNames.add(samaj.getString("name"));
+                        // Check if request was successful
+                        boolean success = response.getBoolean("success");
+                        if (success) {
+                            // Get the samajs array from the response
+                            JSONArray samajsArray = response.getJSONArray("samajs");
+                            Log.d(TAG, "Samajs loaded successfully. Count: " + samajsArray.length());
+
+                            for (int i = 0; i < samajsArray.length(); i++) {
+                                JSONObject samaj = samajsArray.getJSONObject(i);
+                                availableSamajs.add(samaj);
+                                samajNames.add(samaj.getString("name"));
+                            }
+
+                            ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                                    android.R.layout.simple_spinner_item, samajNames);
+                            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                            selectSamajSpinner.setAdapter(adapter);
+
+                            if (availableSamajs.isEmpty()) {
+                                Toast.makeText(this, "No samajs available. Contact admin to create one.", Toast.LENGTH_LONG).show();
+                            } else {
+                                Toast.makeText(this, "Samajs loaded successfully", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            // Handle unsuccessful response
+                            String message = response.optString("message", "Failed to retrieve samajs");
+                            Log.e(TAG, "Server returned error: " + message);
+                            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
                         }
 
-                        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                                android.R.layout.simple_spinner_item, samajNames);
-                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                        selectSamajSpinner.setAdapter(adapter);
-
                     } catch (JSONException e) {
-                        Toast.makeText(this, "Error loading samajs", Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "JSON parsing error: " + e.getMessage());
+                        Toast.makeText(this, "Error parsing samaj data", Toast.LENGTH_SHORT).show();
                     }
+
+                    isLoadingSamajs = false;
                 },
-                error -> Toast.makeText(this, "Failed to load samajs", Toast.LENGTH_SHORT).show()
+                error -> {
+                    Log.e(TAG, "Failed to load samajs: " + error.toString());
+
+                    String errorMessage = "Failed to load samajs";
+                    if (error.networkResponse != null) {
+                        int statusCode = error.networkResponse.statusCode;
+                        Log.e(TAG, "HTTP Status Code: " + statusCode);
+
+                        switch (statusCode) {
+                            case 404:
+                                errorMessage = "Samaj service not found. Please contact support.";
+                                break;
+                            case 500:
+                                errorMessage = "Server error while loading samajs";
+                                break;
+                            case 400:
+                                errorMessage = "Invalid request for samajs";
+                                break;
+                            default:
+                                errorMessage = "Network error (Code: " + statusCode + ")";
+                        }
+                    } else if (error.getMessage() != null) {
+                        if (error.getMessage().contains("timeout")) {
+                            errorMessage = "Request timeout. Please check your internet connection.";
+                        } else if (error.getMessage().contains("No address associated")) {
+                            errorMessage = "Cannot connect to server. Please check your internet connection.";
+                        }
+                        Log.e(TAG, "Error message: " + error.getMessage());
+                    }
+
+                    Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+
+                    // Set up default spinner with error message
+                    List<String> errorList = new ArrayList<>();
+                    errorList.add("Failed to load samajs - Retry");
+                    ArrayAdapter<String> errorAdapter = new ArrayAdapter<>(this,
+                            android.R.layout.simple_spinner_item, errorList);
+                    errorAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    selectSamajSpinner.setAdapter(errorAdapter);
+
+                    isLoadingSamajs = false;
+                }
         );
 
-        request.setRetryPolicy(new DefaultRetryPolicy(150000, 0, 1.0f));
+        // Increased timeout and retry policy
+        request.setRetryPolicy(new DefaultRetryPolicy(30000, 1, 1.0f));
         requestQueue.add(request);
     }
 
@@ -249,18 +329,22 @@ public class SignupActivity extends AppCompatActivity {
         }
 
         if (availableSamajs.isEmpty()) {
-            Toast.makeText(this, "No samajs available to join. Please wait for an admin to create a samaj.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "No samajs available to join. Please wait for an admin to create a samaj or try refreshing.", Toast.LENGTH_LONG).show();
+            // Offer to retry loading samajs
+            loadAvailableSamajs();
             return;
         }
 
         try {
             JSONObject selectedSamaj = availableSamajs.get(selectedSamajPosition - 1);
-            String samajId = selectedSamaj.getString("_id");
+            // Use "id" instead of "_id" based on your server response
+            String samajId = selectedSamaj.getString("id");
 
             setLoadingState(true);
             registerUserAndJoinSamaj(name, email, password, samajId);
-        } catch (JSONException e) {
-            Toast.makeText(this, "Error selecting samaj", Toast.LENGTH_SHORT).show();
+        } catch (JSONException | IndexOutOfBoundsException e) {
+            Log.e(TAG, "Error selecting samaj: " + e.getMessage());
+            Toast.makeText(this, "Error selecting samaj. Please try again.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -274,12 +358,16 @@ public class SignupActivity extends AppCompatActivity {
                         boolean exists = response.getBoolean("exists");
                         callback.onResult(exists);
                     } catch (JSONException e) {
+                        Log.e(TAG, "Error parsing samaj exists response: " + e.getMessage());
                         callback.onResult(false);
                     }
                 },
-                error -> callback.onResult(false)
+                error -> {
+                    Log.e(TAG, "Error checking samaj existence: " + error.toString());
+                    callback.onResult(false);
+                }
         );
-
+        request.setRetryPolicy(new DefaultRetryPolicy(30000, 1, 1.0f));
         requestQueue.add(request);
     }
 
@@ -297,6 +385,7 @@ public class SignupActivity extends AppCompatActivity {
             samajData.put("adminEmail", email);
             samajData.put("adminPassword", password);
         } catch (JSONException e) {
+            Log.e(TAG, "Error creating samaj data: " + e.getMessage());
             Toast.makeText(this, "Error creating samaj data", Toast.LENGTH_SHORT).show();
             setLoadingState(false);
             return;
@@ -317,7 +406,7 @@ public class SignupActivity extends AppCompatActivity {
             }
         };
 
-        request.setRetryPolicy(new DefaultRetryPolicy(150000, 0, 1.0f));
+        request.setRetryPolicy(new DefaultRetryPolicy(30000, 1, 1.0f));
         requestQueue.add(request);
     }
 
@@ -330,6 +419,7 @@ public class SignupActivity extends AppCompatActivity {
             userData.put("isAdmin", false);
             userData.put("samajId", samajId);
         } catch (JSONException e) {
+            Log.e(TAG, "Error creating user data: " + e.getMessage());
             Toast.makeText(this, "Error creating user data", Toast.LENGTH_SHORT).show();
             setLoadingState(false);
             return;
@@ -350,10 +440,11 @@ public class SignupActivity extends AppCompatActivity {
             }
         };
 
-        request.setRetryPolicy(new DefaultRetryPolicy(150000, 0, 1.0f));
+        request.setRetryPolicy(new DefaultRetryPolicy(30000, 1, 1.0f));
         requestQueue.add(request);
     }
 
+    // Rest of the methods remain the same...
     private boolean validateCommonInput(String name, String email, String password, String confirmPassword) {
         if (name.isEmpty()) {
             nameEditText.setError("Name is required");
@@ -491,6 +582,7 @@ public class SignupActivity extends AppCompatActivity {
                 }
             }
         } catch (JSONException e) {
+            Log.e(TAG, "Error parsing samaj creation response: " + e.getMessage());
             Toast.makeText(this, "Error parsing response", Toast.LENGTH_SHORT).show();
         }
 
@@ -518,6 +610,7 @@ public class SignupActivity extends AppCompatActivity {
                 }
             }
         } catch (JSONException e) {
+            Log.e(TAG, "Error parsing registration response: " + e.getMessage());
             Toast.makeText(this, "Error parsing response", Toast.LENGTH_SHORT).show();
         }
 
@@ -525,10 +618,14 @@ public class SignupActivity extends AppCompatActivity {
     }
 
     private void handleErrorResponse(com.android.volley.VolleyError error) {
+        Log.e(TAG, "Network error: " + error.toString());
+
         String errorMessage = "Operation failed. Please try again.";
 
         if (error.networkResponse != null) {
             int statusCode = error.networkResponse.statusCode;
+            Log.e(TAG, "HTTP Status Code: " + statusCode);
+
             switch (statusCode) {
                 case 409:
                     errorMessage = "Email already registered or Samaj already exists";
@@ -539,9 +636,17 @@ public class SignupActivity extends AppCompatActivity {
                 case 500:
                     errorMessage = "Server error. Please try later.";
                     break;
+                case 404:
+                    errorMessage = "Service not found. Please contact support.";
+                    break;
             }
-        } else if (error.getMessage() != null && error.getMessage().contains("timeout")) {
-            errorMessage = "Request timeout. Please check your connection.";
+        } else if (error.getMessage() != null) {
+            if (error.getMessage().contains("timeout")) {
+                errorMessage = "Request timeout. Please check your connection.";
+            } else if (error.getMessage().contains("No address associated")) {
+                errorMessage = "Cannot connect to server. Please check your internet connection.";
+            }
+            Log.e(TAG, "Error message: " + error.getMessage());
         }
 
         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
@@ -551,7 +656,7 @@ public class SignupActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        startActivity(new Intent(this, LoginActivity.class));
+        startActivity(new Intent(this, IntroActivity.class));
         finish();
     }
 
