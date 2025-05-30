@@ -472,7 +472,7 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
             }
         } else if (userType == 2) { // Individual
             if (selectedSamaj == null) {
-                Toast.makeText(this, "Please select a samaj to join", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Samaj does not exist, please create a new Samaj.", Toast.LENGTH_SHORT).show();
                 return;
             }
             registerUser();
