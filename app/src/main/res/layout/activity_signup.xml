@@ -44,7 +44,7 @@
                 android:id="@+id/textViewUserType"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Signup as"
+                android:text="User Role"
                 android:textColor="#000000"
                 android:textSize="@dimen/label_text_size"
                 android:textStyle="bold"
@@ -60,6 +60,60 @@
                 android:layout_marginTop="@dimen/signup_input_margin_top"
                 android:background="@drawable/edittext_background"
                 android:padding="@dimen/input_padding" />
+
+            <!-- Searchable Samaj Field (Always visible after user type selection) -->
+            <LinearLayout
+                android:id="@+id/layoutSamajSearch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- Samaj Search Label -->
+                <TextView
+                    android:id="@+id/textViewSamajSearch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/signup_label_margin_top"
+                    android:text="Search Samaj"
+                    android:textColor="#000000"
+                    android:textSize="@dimen/label_text_size"
+                    android:textStyle="bold"
+                    app:autoSizeTextType="uniform"
+                    app:autoSizeMinTextSize="16sp"
+                    app:autoSizeMaxTextSize="22sp" />
+
+                <!-- Searchable Samaj Input -->
+                <EditText
+                    android:id="@+id/editTextSamajSearch"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="@dimen/signup_input_margin_top"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:drawableEnd="@drawable/search_icon"
+                    android:ems="10"
+                    android:inputType="text"
+                    android:background="@drawable/white_search_edittext"
+                    android:hint="Search for samaj..."
+                    android:elevation="3dp"
+                    android:textStyle="bold"
+                    android:textColor="#8d8d8d"
+                    android:textColorHint="#8d8d8d"
+                    android:textSize="16sp" />
+
+                <!-- Suggestions RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerViewSamajSuggestions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:maxHeight="200dp"
+                    android:background="@drawable/edittext_background"
+                    android:elevation="4dp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
 
             <!-- Name Label -->
             <TextView
@@ -157,7 +211,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/signup_label_margin_top"
-                android:text="Retype Password"
+                android:text="Confirm Password"
                 android:textColor="#000000"
                 android:textSize="@dimen/label_text_size"
                 android:textStyle="bold"
@@ -173,7 +227,7 @@
                 android:layout_marginTop="@dimen/signup_input_margin_top"
                 android:background="@drawable/edittext_background"
                 android:ems="10"
-                android:hint="Retype your Password"
+                android:hint="COnfirm Your Password"
                 android:inputType="textPassword"
                 android:padding="@dimen/input_padding"
                 android:textSize="@dimen/input_text_size"
@@ -196,32 +250,6 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:visibility="gone">
-
-                    <!-- Samaj Name Label -->
-                    <TextView
-                        android:id="@+id/textViewSamajName"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/signup_label_margin_top"
-                        android:text="Samaj Name"
-                        android:textColor="#000000"
-                        android:textSize="@dimen/label_text_size"
-                        android:textStyle="bold"
-                        app:autoSizeTextType="uniform"
-                        app:autoSizeMinTextSize="16sp"
-                        app:autoSizeMaxTextSize="22sp" />
-
-                    <!-- Samaj Name Input -->
-                    <EditText
-                        android:id="@+id/editTextSamajName"
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/input_height"
-                        android:layout_marginTop="@dimen/signup_input_margin_top"
-                        android:background="@drawable/edittext_background"
-                        android:hint="Enter Samaj Name"
-                        android:inputType="text"
-                        android:padding="@dimen/input_padding"
-                        android:textSize="@dimen/input_text_size" />
 
                     <!-- Samaj Description Label -->
                     <TextView
@@ -305,39 +333,6 @@
                         android:inputType="none"
                         android:padding="@dimen/input_padding"
                         android:textSize="@dimen/input_text_size" />
-
-                </LinearLayout>
-
-                <!-- Normal User Fields (Join Samaj) -->
-                <LinearLayout
-                    android:id="@+id/layoutUserFields"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:visibility="gone">
-
-                    <!-- Select Samaj Label -->
-                    <TextView
-                        android:id="@+id/textViewSelectSamaj"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/signup_label_margin_top"
-                        android:text="Select Samaj to Join"
-                        android:textColor="#000000"
-                        android:textSize="@dimen/label_text_size"
-                        android:textStyle="bold"
-                        app:autoSizeTextType="uniform"
-                        app:autoSizeMinTextSize="16sp"
-                        app:autoSizeMaxTextSize="22sp" />
-
-                    <!-- Select Samaj Dropdown -->
-                    <Spinner
-                        android:id="@+id/spinnerSelectSamaj"
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/input_height"
-                        android:layout_marginTop="@dimen/signup_input_margin_top"
-                        android:background="@drawable/edittext_background"
-                        android:padding="@dimen/input_padding" />
 
                 </LinearLayout>
 
