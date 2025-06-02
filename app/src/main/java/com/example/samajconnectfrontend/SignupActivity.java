@@ -9,12 +9,11 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -45,7 +44,8 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
     private static final String TAG = "SignupActivity";
 
     // Common Fields
-    private Spinner userTypeSpinner;
+    private Spinner userTypeSpinner; // Hidden spinner for compatibility
+    private TextView userTypeDisplayTextView; // Display TextView from XML
     private EditText nameEditText, emailEditText, passwordEditText, confirmPasswordEditText;
     private Button registerButton;
     private LinearLayout dynamicFieldsLayout, adminFieldsLayout, samajSearchLayout;
@@ -64,9 +64,11 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
     private Calendar selectedDate = Calendar.getInstance();
     private boolean isLoadingSamajs = false;
 
-    // Selected samaj for both admin and user
+    // Selected samaj and user type logic
     private JSONObject selectedSamaj = null;
     private boolean isCreatingNewSamaj = false;
+    private String currentUserType = "none"; // "admin", "individual", "none"
+    private boolean samajSelectionMade = false; // Track if user has made a selection
 
     // Search delay handler
     private Handler searchHandler = new Handler();
@@ -84,7 +86,6 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         setContentView(R.layout.activity_signup);
 
         initializeViews();
-        setupSpinners();
         setupClickListeners();
         setupSearchFunctionality();
 
@@ -95,7 +96,12 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
     }
 
     private void initializeViews() {
+        // Hidden spinner for compatibility
         userTypeSpinner = findViewById(R.id.spinnerUserType);
+
+        // Display TextView from XML
+        userTypeDisplayTextView = findViewById(R.id.textViewUserTypeDisplay);
+
         nameEditText = findViewById(R.id.editTextText);
         emailEditText = findViewById(R.id.editTextText2);
         passwordEditText = findViewById(R.id.editTextText1);
@@ -119,73 +125,27 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         suggestionsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         suggestionAdapter = new SamajSuggestionAdapter(filteredSamajs, this);
         suggestionsRecyclerView.setAdapter(suggestionAdapter);
+
+        // Initially hide all dynamic elements
+        resetToInitialState();
     }
 
-    private void setupSpinners() {
-        // User Type Spinner
-        String[] userTypes = {"Select User Type", "Admin", "Individual"};
-        ArrayAdapter<String> userTypeAdapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item, userTypes);
-        userTypeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        userTypeSpinner.setAdapter(userTypeAdapter);
-
-        userTypeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                handleUserTypeSelection(position);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
-    }
-
-    private void handleUserTypeSelection(int position) {
+    private void resetToInitialState() {
+        samajSearchLayout.setVisibility(View.VISIBLE);
         dynamicFieldsLayout.setVisibility(View.GONE);
         adminFieldsLayout.setVisibility(View.GONE);
-        samajSearchLayout.setVisibility(View.GONE);
         suggestionsRecyclerView.setVisibility(View.GONE);
 
-        // Reset selections
+        userTypeDisplayTextView.setText("Select a Samaj first");
+        userTypeDisplayTextView.setTextColor(getResources().getColor(android.R.color.darker_gray));
+
+        registerButton.setText("SIGN UP");
+
+        currentUserType = "none";
         selectedSamaj = null;
         isCreatingNewSamaj = false;
+        samajSelectionMade = false;
         samajSearchEditText.setText("");
-
-        switch (position) {
-            case 1: // Admin
-                samajSearchLayout.setVisibility(View.VISIBLE);
-                findViewById(R.id.textViewSamajSearch).setVisibility(View.VISIBLE);
-                ((android.widget.TextView) findViewById(R.id.textViewSamajSearch)).setText("Create New Samaj");
-                samajSearchEditText.setHint("Enter new samaj name...");
-                dynamicFieldsLayout.setVisibility(View.VISIBLE);
-                adminFieldsLayout.setVisibility(View.VISIBLE);
-                registerButton.setText("CREATE SAMAJ & SIGN UP");
-                isCreatingNewSamaj = true;
-
-                // Load samajs for duplicate checking
-                if (availableSamajs.isEmpty() && !isLoadingSamajs) {
-                    loadAvailableSamajs();
-                }
-                break;
-
-            case 2: // Individual
-                samajSearchLayout.setVisibility(View.VISIBLE);
-                findViewById(R.id.textViewSamajSearch).setVisibility(View.VISIBLE);
-                ((android.widget.TextView) findViewById(R.id.textViewSamajSearch)).setText("Search Samaj to Join");
-                samajSearchEditText.setHint("Search for samaj to join...");
-                registerButton.setText("JOIN SAMAJ & SIGN UP");
-                isCreatingNewSamaj = false;
-
-                // Load samajs for searching
-                if (availableSamajs.isEmpty() && !isLoadingSamajs) {
-                    loadAvailableSamajs();
-                }
-                break;
-
-            default: // Select User Type
-                registerButton.setText("SIGN UP");
-                break;
-        }
     }
 
     private void setupClickListeners() {
@@ -205,11 +165,33 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
                     searchHandler.removeCallbacks(searchRunnable);
                 }
 
-                // Create new search runnable
-                searchRunnable = () -> performSearch(s.toString().trim());
+                String currentText = s.toString().trim();
 
-                // Delay the search
-                searchHandler.postDelayed(searchRunnable, SEARCH_DELAY);
+                // Only reset if user is actually changing the text (not if selection was made)
+                if (!samajSelectionMade) {
+                    // Reset user type when search text changes
+                    if (selectedSamaj != null || !currentUserType.equals("none")) {
+                        resetUserTypeSelection();
+                    }
+                } else {
+                    // If selection was made, check if user is changing the selected text
+                    try {
+                        if (selectedSamaj != null && !currentText.equals(selectedSamaj.getString("name"))) {
+                            // User is modifying selected samaj name, reset selection
+                            resetUserTypeSelection();
+                            samajSelectionMade = false;
+                        }
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Error checking selected samaj name", e);
+                    }
+                }
+
+                // Create new search runnable only if no selection is made
+                if (!samajSelectionMade) {
+                    searchRunnable = () -> performSearch(currentText);
+                    // Delay the search
+                    searchHandler.postDelayed(searchRunnable, SEARCH_DELAY);
+                }
             }
 
             @Override
@@ -224,217 +206,165 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         });
     }
 
+    private void resetUserTypeSelection() {
+        selectedSamaj = null;
+        isCreatingNewSamaj = false;
+        currentUserType = "none";
+        samajSelectionMade = false;
+
+        userTypeDisplayTextView.setText("Select a Samaj first");
+        userTypeDisplayTextView.setTextColor(getResources().getColor(android.R.color.darker_gray));
+
+        dynamicFieldsLayout.setVisibility(View.GONE);
+        adminFieldsLayout.setVisibility(View.GONE);
+
+        registerButton.setText("SIGN UP");
+    }
+
     private void performSearch(String query) {
         if (query.isEmpty()) {
             suggestionsRecyclerView.setVisibility(View.GONE);
-            selectedSamaj = null;
             return;
         }
 
-        int userType = userTypeSpinner.getSelectedItemPosition();
-
-        // For Admin creating new samaj - show similar existing names to prevent duplicates
-        if (userType == 1) { // Admin
-            searchSimilarSamajsForAdmin(query);
-            return;
-        }
-
-        // For Individual searching existing samajs to join
-        if (userType == 2) { // Individual
-            filteredSamajs.clear();
-            String lowerQuery = query.toLowerCase();
-
-            for (JSONObject samaj : availableSamajs) {
-                try {
-                    String name = samaj.getString("name").toLowerCase();
-                    if (name.contains(lowerQuery)) {
-                        filteredSamajs.add(samaj);
-                    }
-                } catch (JSONException e) {
-                    Log.e(TAG, "Error filtering samajs", e);
-                }
-            }
-
-            suggestionAdapter.notifyDataSetChanged();
-            suggestionsRecyclerView.setVisibility(filteredSamajs.isEmpty() ? View.GONE : View.VISIBLE);
-        }
-    }
-
-    private void searchSimilarSamajsForAdmin(String query) {
+        // Search through available samajs
         filteredSamajs.clear();
-        String lowerQuery = query.toLowerCase().trim();
+        String lowerQuery = query.toLowerCase();
+        boolean exactMatch = false;
 
-        // Find similar samaj names (case-insensitive, partial matches)
         for (JSONObject samaj : availableSamajs) {
             try {
-                String existingName = samaj.getString("name");
-                String lowerExistingName = existingName.toLowerCase().trim();
+                String name = samaj.getString("name");
+                String lowerName = name.toLowerCase();
 
-                // Check for exact match or partial matches
-                if (lowerExistingName.equals(lowerQuery) || lowerExistingName.contains(lowerQuery)) {
-                    filteredSamajs.add(samaj);
-                    // For exact match, show a specific toast
-                    if (lowerExistingName.equals(lowerQuery)) {
-                        Toast.makeText(this, "A samaj with this exact name already exists.", Toast.LENGTH_SHORT).show();
-                    }
-                } else if (query.length() >= 3 && calculateSimilarity(lowerQuery, lowerExistingName) > 0.85) {
-                    // Only consider similarity for queries of 3+ characters to avoid single-character noise
+                if (lowerName.equals(lowerQuery)) {
+                    exactMatch = true;
+                    filteredSamajs.add(0, samaj); // Add exact match at the beginning
+                } else if (lowerName.contains(lowerQuery)) {
                     filteredSamajs.add(samaj);
                 }
             } catch (JSONException e) {
-                Log.e(TAG, "Error checking samaj similarity", e);
+                Log.e(TAG, "Error filtering samajs", e);
             }
         }
 
-        // Show suggestions if any matches found, but no toast for partial matches
+        // Show suggestions
         suggestionAdapter.notifyDataSetChanged();
         suggestionsRecyclerView.setVisibility(filteredSamajs.isEmpty() ? View.GONE : View.VISIBLE);
+
+        // Determine if user can create new samaj (no exact match found)
+        if (!exactMatch && query.length() >= 2) {
+            // Show option to create new samaj by setting creating mode
+            // This will be handled when user stops typing and no selection is made
+            checkForNewSamajCreation(query);
+        }
     }
 
-    private double calculateSimilarity(String s1, String s2) {
-        if (s1.equals(s2)) return 1.0;
+    private void checkForNewSamajCreation(String query) {
+        // This method runs after search delay when no exact match is found
+        searchHandler.postDelayed(() -> {
+            // Only proceed if no samaj selection has been made and the query is still the same
+            if (!samajSelectionMade && selectedSamaj == null && !query.isEmpty() &&
+                    samajSearchEditText.getText().toString().trim().equals(query)) {
 
-        int maxLength = Math.max(s1.length(), s2.length());
-        if (maxLength == 0) return 1.0;
+                // Check if any existing samaj matches exactly
+                boolean exactMatch = false;
+                for (JSONObject samaj : availableSamajs) {
+                    try {
+                        if (samaj.getString("name").equalsIgnoreCase(query)) {
+                            exactMatch = true;
+                            break;
+                        }
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Error checking exact match", e);
+                    }
+                }
 
-        return (maxLength - levenshteinDistance(s1, s2)) / (double) maxLength;
-    }
-
-    private int levenshteinDistance(String s1, String s2) {
-        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
-
-        for (int i = 0; i <= s1.length(); i++) {
-            dp[i][0] = i;
-        }
-
-        for (int j = 0; j <= s2.length(); j++) {
-            dp[0][j] = j;
-        }
-
-        for (int i = 1; i <= s1.length(); i++) {
-            for (int j = 1; j <= s2.length(); j++) {
-                if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
-                    dp[i][j] = dp[i - 1][j - 1];
-                } else {
-                    dp[i][j] = 1 + Math.min(Math.min(dp[i - 1][j], dp[i][j - 1]), dp[i - 1][j - 1]);
+                if (!exactMatch) {
+                    // Enable new samaj creation mode
+                    setUserTypeAsAdmin(true);
                 }
             }
-        }
-
-        return dp[s1.length()][s2.length()];
-    }
-
-    private void checkSamajExists(String samajName) {
-        String url = CHECK_SAMAJ_URL + samajName;
-
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
-                response -> {
-                    try {
-                        boolean exists = response.getBoolean("exists");
-                        if (exists) {
-                            // Show existing samaj in suggestions
-                            filteredSamajs.clear();
-                            filteredSamajs.add(response.getJSONObject("samaj"));
-                            suggestionAdapter.notifyDataSetChanged();
-                            suggestionsRecyclerView.setVisibility(View.VISIBLE);
-                            Toast.makeText(this, "Samaj already exists. You can become an admin.", Toast.LENGTH_SHORT).show();
-                        } else {
-                            // Hide suggestions for new samaj creation
-                            suggestionsRecyclerView.setVisibility(View.GONE);
-                            selectedSamaj = null;
-                        }
-                    } catch (JSONException e) {
-                        Log.e(TAG, "Error parsing samaj check response", e);
-                    }
-                },
-                error -> {
-                    Log.e(TAG, "Error checking samaj existence", error);
-                    // Hide suggestions on error
-                    suggestionsRecyclerView.setVisibility(View.GONE);
-                });
-
-        request.setRetryPolicy(new DefaultRetryPolicy(
-                10000,
-                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
-                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
-
-        requestQueue.add(request);
-    }
-
-    private void loadAvailableSamajs() {
-        if (isLoadingSamajs) return;
-
-        isLoadingSamajs = true;
-
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, GET_SAMAJS_URL, null,
-                response -> {
-                    isLoadingSamajs = false;
-                    availableSamajs.clear();
-
-                    try {
-                        // Extract the "samajs" array from the response object
-                        JSONArray samajsArray = response.getJSONArray("samajs");
-
-                        for (int i = 0; i < samajsArray.length(); i++) {
-                            JSONObject samaj = samajsArray.getJSONObject(i);
-                            availableSamajs.add(samaj);
-                        }
-
-                        Log.d(TAG, "Loaded " + availableSamajs.size() + " samajs");
-                    } catch (JSONException e) {
-                        Log.e(TAG, "Error parsing samajs", e);
-                    }
-                },
-                error -> {
-                    isLoadingSamajs = false;
-                    Log.e(TAG, "Error loading samajs", error);
-                    Toast.makeText(this, "Failed to load samajs", Toast.LENGTH_SHORT).show();
-                });
-
-        request.setRetryPolicy(new DefaultRetryPolicy(
-                10000,
-                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
-                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
-
-        requestQueue.add(request);
+        }, SEARCH_DELAY + 100);
     }
 
     @Override
     public void onSamajClick(JSONObject samaj) {
         try {
-            int userType = userTypeSpinner.getSelectedItemPosition();
+            selectedSamaj = samaj;
+            samajSelectionMade = true; // Mark that user has made a selection
 
-            if (userType == 1) { // Admin - show warning about existing samaj
-                String existingName = samaj.getString("name");
+            samajSearchEditText.setText(samaj.getString("name"));
+            suggestionsRecyclerView.setVisibility(View.GONE);
+            samajSearchEditText.clearFocus();
 
-                // Show dialog asking if they want to use different name
-                new AlertDialog.Builder(this)
-                        .setTitle("Samaj Already Exists")
-                        .setMessage("A samaj named '" + existingName + "' already exists. " +
-                                "Please choose a different name to avoid confusion.")
-                        .setPositiveButton("Choose Different Name", (dialog, which) -> {
-                            samajSearchEditText.setText("");
-                            samajSearchEditText.requestFocus();
-                        })
-                        .setNegativeButton("Keep Current Name", (dialog, which) -> {
-                            // Keep current text, user insists on this name
-                        })
-                        .show();
-
-            } else if (userType == 2) { // Individual - normal selection
-                selectedSamaj = samaj;
-                samajSearchEditText.setText(samaj.getString("name"));
-                suggestionsRecyclerView.setVisibility(View.GONE);
-                samajSearchEditText.clearFocus();
+            // Cancel any pending search operations
+            if (searchRunnable != null) {
+                searchHandler.removeCallbacks(searchRunnable);
             }
 
-            // Hide suggestions after interaction
-            suggestionsRecyclerView.setVisibility(View.GONE);
+            // Set user type as Individual (joining existing samaj)
+            setUserTypeAsIndividual();
 
         } catch (JSONException e) {
             Log.e(TAG, "Error handling samaj click", e);
             Toast.makeText(this, "Error processing selection", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void setUserTypeAsIndividual() {
+        currentUserType = "individual";
+        isCreatingNewSamaj = false;
+
+        userTypeDisplayTextView.setText("Individual (Joining Samaj)");
+        userTypeDisplayTextView.setTextColor(getResources().getColor(android.R.color.holo_blue_dark));
+
+        // Hide admin fields
+        dynamicFieldsLayout.setVisibility(View.GONE);
+        adminFieldsLayout.setVisibility(View.GONE);
+
+        registerButton.setText("JOIN SAMAJ & SIGN UP");
+
+        // Set hidden spinner for compatibility
+        // Assuming spinner has: [0: Select, 1: Admin, 2: Individual]
+        // We'll set it programmatically without triggering the listener
+        if (userTypeSpinner.getAdapter() != null) {
+            userTypeSpinner.setSelection(2, false);
+        }
+
+        Log.d(TAG, "User type set to individual, selectedSamaj: " + (selectedSamaj != null ? "exists" : "null"));
+    }
+
+    private void setUserTypeAsAdmin(boolean creatingNew) {
+        currentUserType = "admin";
+        isCreatingNewSamaj = creatingNew;
+
+        if (creatingNew) {
+            userTypeDisplayTextView.setText("Admin (Creating New Samaj)");
+            userTypeDisplayTextView.setTextColor(getResources().getColor(android.R.color.holo_orange_dark));
+
+            // Show admin fields for new samaj creation
+            dynamicFieldsLayout.setVisibility(View.VISIBLE);
+            adminFieldsLayout.setVisibility(View.VISIBLE);
+
+            registerButton.setText("CREATE SAMAJ & SIGN UP");
+        } else {
+            userTypeDisplayTextView.setText("Admin (Joining Existing Samaj)");
+            userTypeDisplayTextView.setTextColor(getResources().getColor(android.R.color.holo_orange_dark));
+
+            // Hide admin fields for existing samaj
+            dynamicFieldsLayout.setVisibility(View.GONE);
+            adminFieldsLayout.setVisibility(View.GONE);
+
+            registerButton.setText("JOIN AS ADMIN & SIGN UP");
+        }
+
+        // Set hidden spinner for compatibility
+        if (userTypeSpinner.getAdapter() != null) {
+            userTypeSpinner.setSelection(1, false);
+        }
+
+        Log.d(TAG, "User type set to admin, creatingNew: " + creatingNew);
     }
 
     private void showDatePicker() {
@@ -455,29 +385,59 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         datePickerDialog.show();
     }
 
+    private void loadAvailableSamajs() {
+        if (isLoadingSamajs) return;
+
+        isLoadingSamajs = true;
+
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, GET_SAMAJS_URL, null,
+                response -> {
+                    isLoadingSamajs = false;
+                    availableSamajs.clear();
+
+                    try {
+                        JSONArray samajsArray = response.getJSONArray("samajs");
+
+                        for (int i = 0; i < samajsArray.length(); i++) {
+                            JSONObject samaj = samajsArray.getJSONObject(i);
+                            availableSamajs.add(samaj);
+                        }
+
+                        Log.d(TAG, "Loaded " + availableSamajs.size() + " samajs");
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Error parsing samajs", e);
+                    }
+                },
+                error -> {
+                    isLoadingSamajs = false;
+                    Log.e(TAG, "Error loading samajs", error);
+                    Toast.makeText(this, "Failed to load samajs", Toast.LENGTH_SHORT).show();
+                });
+
+        request.setRetryPolicy(new DefaultRetryPolicy(
+                150000, // 150 seconds timeout
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+
+        requestQueue.add(request);
+    }
+
     private void attemptRegistration() {
         if (!validateInputs()) {
             return;
         }
 
-        int userType = userTypeSpinner.getSelectedItemPosition();
+        if (currentUserType.equals("none")) {
+            Toast.makeText(this, "Please select a samaj first", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        if (userType == 1) { // Admin
-            if (selectedSamaj != null) {
-                // Admin joining existing samaj
-                registerUser();
-            } else {
-                // Admin creating new samaj
-                createSamajAndRegister();
-            }
-        } else if (userType == 2) { // Individual
-            if (selectedSamaj == null) {
-                Toast.makeText(this, "Samaj does not exist, please create a new Samaj.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            registerUser();
+        if (currentUserType.equals("admin") && isCreatingNewSamaj) {
+            // Admin creating new samaj - use the single endpoint
+            createSamajWithAdmin();
         } else {
-            Toast.makeText(this, "Please select user type", Toast.LENGTH_SHORT).show();
+            // Admin joining existing samaj or Individual joining existing samaj
+            registerUser();
         }
     }
 
@@ -523,17 +483,16 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
             return false;
         }
 
+        // Samaj validation
+        String samajName = samajSearchEditText.getText().toString().trim();
+        if (samajName.isEmpty()) {
+            samajSearchEditText.setError("Please search and select a samaj");
+            samajSearchEditText.requestFocus();
+            return false;
+        }
+
         // Additional validation for admin creating new samaj
-        int userType = userTypeSpinner.getSelectedItemPosition();
-        if (userType == 1 && selectedSamaj == null) { // Admin creating new samaj
-            String samajName = samajSearchEditText.getText().toString().trim();
-
-            if (samajName.isEmpty()) {
-                samajSearchEditText.setError("Samaj name is required");
-                samajSearchEditText.requestFocus();
-                return false;
-            }
-
+        if (currentUserType.equals("admin") && isCreatingNewSamaj) {
             // Check for exact duplicate (case-insensitive)
             if (isDuplicateSamajName(samajName)) {
                 samajSearchEditText.setError("A samaj with this name already exists");
@@ -566,6 +525,19 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
             }
         }
 
+        // For individual or admin joining existing samaj, ensure samaj is selected
+        if (!isCreatingNewSamaj && selectedSamaj == null) {
+            Toast.makeText(this, "Please select an existing samaj from the suggestions", Toast.LENGTH_SHORT).show();
+            samajSearchEditText.requestFocus();
+            return false;
+        }
+
+        // Debug logging
+        Log.d(TAG, "Validation passed - currentUserType: " + currentUserType +
+                ", isCreatingNewSamaj: " + isCreatingNewSamaj +
+                ", selectedSamaj: " + (selectedSamaj != null ? "exists" : "null") +
+                ", samajSelectionMade: " + samajSelectionMade);
+
         return true;
     }
 
@@ -585,13 +557,20 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         return false;
     }
 
-    private void createSamajAndRegister() {
+    private void createSamajWithAdmin() {
         JSONObject samajData = new JSONObject();
         try {
+            // Samaj data
             samajData.put("name", samajSearchEditText.getText().toString().trim());
             samajData.put("description", samajDescriptionEditText.getText().toString().trim());
             samajData.put("rules", samajRulesEditText.getText().toString().trim());
-            samajData.put("established_date", establishedDateEditText.getText().toString().trim());
+            samajData.put("establishedDate", establishedDateEditText.getText().toString().trim());
+
+            // Admin user data
+            samajData.put("adminName", nameEditText.getText().toString().trim());
+            samajData.put("adminEmail", emailEditText.getText().toString().trim());
+            samajData.put("adminPassword", passwordEditText.getText().toString());
+
         } catch (JSONException e) {
             Log.e(TAG, "Error creating samaj JSON", e);
             Toast.makeText(this, "Error preparing samaj data", Toast.LENGTH_SHORT).show();
@@ -604,86 +583,29 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, CREATE_SAMAJ_URL, samajData,
                 response -> {
                     try {
-                        selectedSamaj = response.getJSONObject("samaj");
-                        registerUser();
-                    } catch (JSONException e) {
-                        Log.e(TAG, "Error parsing created samaj", e);
-                        Toast.makeText(this, "Error creating samaj", Toast.LENGTH_SHORT).show();
-                        resetRegisterButton();
+                        String message = response.optString("message", "Samaj created successfully!");
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+
+                        // Navigate to OTP activity
+                        navigateToOtpActivity();
+
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing samaj creation response", e);
+                        Toast.makeText(this, "Samaj created successfully!", Toast.LENGTH_SHORT).show();
+
+                        // Navigate to OTP activity anyway
+                        navigateToOtpActivity();
                     }
                 },
                 error -> {
                     Log.e(TAG, "Error creating samaj", error);
-                    Toast.makeText(this, "Failed to create samaj", Toast.LENGTH_SHORT).show();
-                    resetRegisterButton();
-                }) {
 
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("Content-Type", "application/json");
-                return headers;
-            }
-        };
-
-        request.setRetryPolicy(new DefaultRetryPolicy(
-                15000,
-                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
-                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
-
-        requestQueue.add(request);
-    }
-
-    private void registerUser() {
-        JSONObject userData = new JSONObject();
-        try {
-            userData.put("name", nameEditText.getText().toString().trim());
-            userData.put("email", emailEditText.getText().toString().trim());
-            userData.put("password", passwordEditText.getText().toString());
-            userData.put("user_type", userTypeSpinner.getSelectedItemPosition() == 1 ? "admin" : "individual");
-
-            if (selectedSamaj != null) {
-                userData.put("samaj_id", selectedSamaj.getInt("id"));
-            }
-        } catch (JSONException e) {
-            Log.e(TAG, "Error creating user JSON", e);
-            Toast.makeText(this, "Error preparing user data", Toast.LENGTH_SHORT).show();
-            resetRegisterButton();
-            return;
-        }
-
-        if (!registerButton.getText().toString().contains("Creating")) {
-            registerButton.setEnabled(false);
-            registerButton.setText("Signing Up...");
-        }
-
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, SIGNUP_URL, userData,
-                response -> {
-                    try {
-                        String message = response.getString("message");
-                        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
-
-                        // Navigate to login
-                        Intent intent = new Intent(SignupActivity.this, LoginActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
-                        finish();
-
-                    } catch (JSONException e) {
-                        Log.e(TAG, "Error parsing registration response", e);
-                        Toast.makeText(this, "Registration successful but response error", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                },
-                error -> {
-                    Log.e(TAG, "Registration error", error);
-                    String errorMessage = "Registration failed";
-
+                    String errorMessage = "Failed to create samaj";
                     try {
                         if (error.networkResponse != null && error.networkResponse.data != null) {
                             String errorBody = new String(error.networkResponse.data);
                             JSONObject errorJson = new JSONObject(errorBody);
-                            errorMessage = errorJson.getString("error");
+                            errorMessage = errorJson.optString("error", errorMessage);
                         }
                     } catch (Exception e) {
                         Log.e(TAG, "Error parsing error response", e);
@@ -702,27 +624,114 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         };
 
         request.setRetryPolicy(new DefaultRetryPolicy(
-                15000,
+                150000, // 150 seconds timeout
                 DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
                 DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
 
         requestQueue.add(request);
     }
 
+    private void registerUser() {
+        JSONObject userData = new JSONObject();
+        try {
+            userData.put("name", nameEditText.getText().toString().trim());
+            userData.put("email", emailEditText.getText().toString().trim());
+            userData.put("password", passwordEditText.getText().toString().trim());
+            userData.put("isAdmin", currentUserType.equalsIgnoreCase("admin"));
+
+            if (selectedSamaj != null) {
+                userData.put("samajId", selectedSamaj.getInt("id"));
+                Log.d(TAG, "Registering user with samajId: " + selectedSamaj.getInt("id"));
+            } else {
+                Log.w(TAG, "selectedSamaj is null during registration");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating user JSON", e);
+            Toast.makeText(this, "Error preparing user data", Toast.LENGTH_SHORT).show();
+            resetRegisterButton();
+            return;
+        }
+
+        registerButton.setEnabled(false);
+        registerButton.setText("Signing Up...");
+
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, SIGNUP_URL, userData,
+                response -> {
+                    try {
+                        String message = response.optString("message", "Registration successful!");
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+
+                        // Navigate to OTP activity
+                        navigateToOtpActivity();
+
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing registration response", e);
+                        Toast.makeText(this, "Registration successful!", Toast.LENGTH_SHORT).show();
+
+                        // Navigate to OTP activity anyway
+                        navigateToOtpActivity();
+                    }
+                },
+                error -> {
+                    Log.e(TAG, "Registration error", error);
+                    String errorMessage = "Registration failed";
+
+                    try {
+                        if (error.networkResponse != null && error.networkResponse.data != null) {
+                            String errorBody = new String(error.networkResponse.data);
+                            JSONObject errorJson = new JSONObject(errorBody);
+                            errorMessage = errorJson.optString("error", errorMessage);
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing error response", e);
+                    }
+
+                    Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+                    resetRegisterButton();
+                }) {
+
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        request.setRetryPolicy(new DefaultRetryPolicy(
+                150000, // 150 seconds timeout
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+
+        requestQueue.add(request);
+    }
+
+    private void navigateToOtpActivity() {
+        Intent intent = new Intent(SignupActivity.this, OtpActivity.class);
+
+        // Pass user credentials to OTP activity
+        intent.putExtra("name", nameEditText.getText().toString().trim());
+        intent.putExtra("email", emailEditText.getText().toString().trim());
+        intent.putExtra("password", passwordEditText.getText().toString().trim());
+
+        // Set flags to clear the task stack
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+        startActivity(intent);
+        finish();
+    }
+
     private void resetRegisterButton() {
         registerButton.setEnabled(true);
-        int userType = userTypeSpinner.getSelectedItemPosition();
 
-        switch (userType) {
-            case 1: // Admin
-                registerButton.setText("CREATE SAMAJ & SIGN UP");
-                break;
-            case 2: // Individual
-                registerButton.setText("JOIN SAMAJ & SIGN UP");
-                break;
-            default:
-                registerButton.setText("SIGN UP");
-                break;
+        if (currentUserType.equals("admin") && isCreatingNewSamaj) {
+            registerButton.setText("CREATE SAMAJ & SIGN UP");
+        } else if (currentUserType.equals("admin")) {
+            registerButton.setText("JOIN AS ADMIN & SIGN UP");
+        } else if (currentUserType.equals("individual")) {
+            registerButton.setText("JOIN SAMAJ & SIGN UP");
+        } else {
+            registerButton.setText("SIGN UP");
         }
     }
 

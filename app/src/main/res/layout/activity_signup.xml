@@ -39,42 +39,18 @@
             android:orientation="vertical"
             android:paddingBottom="@dimen/form_bottom_padding">
 
-            <!-- User Type Dropdown Label -->
-            <TextView
-                android:id="@+id/textViewUserType"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Sign up as"
-                android:textColor="#000000"
-                android:textSize="@dimen/label_text_size"
-                android:textStyle="bold"
-                app:autoSizeTextType="uniform"
-                app:autoSizeMinTextSize="16sp"
-                app:autoSizeMaxTextSize="22sp" />
-
-            <!-- User Type Dropdown -->
-            <Spinner
-                android:id="@+id/spinnerUserType"
-                android:layout_width="match_parent"
-                android:layout_height="@dimen/input_height"
-                android:layout_marginTop="@dimen/signup_input_margin_top"
-                android:background="@drawable/edittext_background"
-                android:padding="@dimen/input_padding" />
-
-            <!-- Searchable Samaj Field (Always visible after user type selection) -->
+            <!-- Samaj Search Field (Now First Field) -->
             <LinearLayout
                 android:id="@+id/layoutSamajSearch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
+                android:orientation="vertical">
 
                 <!-- Samaj Search Label -->
                 <TextView
                     android:id="@+id/textViewSamajSearch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/signup_label_margin_top"
                     android:text="Search Samaj"
                     android:textColor="#000000"
                     android:textSize="@dimen/label_text_size"
@@ -95,7 +71,7 @@
                     android:ems="10"
                     android:inputType="text"
                     android:background="@drawable/edittext_background"
-                    android:hint="Search for samaj..."
+                    android:hint="Search or create new samaj..."
                     android:textStyle="bold"
                     android:textSize="16sp" />
 
@@ -111,6 +87,45 @@
                     android:visibility="gone" />
 
             </LinearLayout>
+
+            <!-- User Type Display (Auto-determined, disabled) -->
+            <TextView
+                android:id="@+id/textViewUserType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/signup_label_margin_top"
+                android:text="Sign up as"
+                android:textColor="#000000"
+                android:textSize="@dimen/label_text_size"
+                android:textStyle="bold"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="16sp"
+                app:autoSizeMaxTextSize="22sp" />
+
+            <!-- User Type Display (Shows automatically determined type) -->
+            <TextView
+                android:id="@+id/textViewUserTypeDisplay"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/input_height"
+                android:layout_marginTop="@dimen/signup_input_margin_top"
+                android:background="@drawable/edittext_background"
+                android:padding="@dimen/input_padding"
+                android:text="Select a Samaj first"
+                android:textColor="#666666"
+                android:textSize="@dimen/input_text_size"
+                android:gravity="center_vertical"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="14sp"
+                app:autoSizeMaxTextSize="18sp" />
+
+            <!-- Hidden Spinner (for compatibility, if needed by backend code) -->
+            <Spinner
+                android:id="@+id/spinnerUserType"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/input_height"
+                android:background="@drawable/edittext_background"
+                android:padding="@dimen/input_padding"
+                android:visibility="gone" />
 
             <!-- Name Label -->
             <TextView
@@ -232,7 +247,7 @@
                 app:autoSizeMinTextSize="14sp"
                 app:autoSizeMaxTextSize="18sp" />
 
-            <!-- Dynamic Container for Admin/User specific fields -->
+            <!-- Dynamic Container for Admin specific fields -->
             <LinearLayout
                 android:id="@+id/layoutDynamicFields"
                 android:layout_width="match_parent"
@@ -240,13 +255,12 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <!-- Admin Fields (Create Samaj) -->
+                <!-- Admin Fields (Create Samaj) - Only shown when creating new Samaj -->
                 <LinearLayout
                     android:id="@+id/layoutAdminFields"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:visibility="gone">
+                    android:orientation="vertical">
 
                     <!-- Samaj Description Label -->
                     <TextView
@@ -352,6 +366,7 @@
                 app:autoSizeMaxTextSize="20sp" />
 
         </LinearLayout>
+
     </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
