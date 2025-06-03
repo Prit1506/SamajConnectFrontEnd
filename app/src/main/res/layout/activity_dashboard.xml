@@ -21,10 +21,10 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- Header Section -->
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="300dp">
-
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/constraintLayout"
@@ -55,7 +55,7 @@
                         android:layout_marginStart="32dp"
                         android:layout_marginTop="8dp"
                         android:text="Hello,"
-                        android:textColor="#FF4C4C"
+                        android:textColor="#FFFFFF"
                         android:textSize="18sp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="@+id/imageView4" />
@@ -85,6 +85,7 @@
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
+                <!-- Stats Cards -->
                 <LinearLayout
                     android:id="@+id/linearlayout1"
                     android:layout_width="match_parent"
@@ -119,11 +120,10 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="4dp"
-                            android:text="TextView"
+                            android:text="Voice Call"
                             android:textAlignment="center"
                             android:textColor="@color/white"
                             android:textStyle="bold|italic" />
-
 
                     </LinearLayout>
 
@@ -147,11 +147,10 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="4dp"
-                            android:text="TextView"
+                            android:text="Video Call"
                             android:textAlignment="center"
                             android:textColor="@color/white"
                             android:textStyle="bold|italic" />
-
 
                     </LinearLayout>
 
@@ -175,82 +174,71 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="4dp"
-                            android:text="TextView"
+                            android:text="Notifications"
                             android:textAlignment="center"
                             android:textColor="@color/white"
                             android:textStyle="bold|italic" />
-
 
                     </LinearLayout>
                 </LinearLayout>
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
+            <!-- Search Bar -->
             <EditText
                 android:id="@+id/editTextText4"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:layout_marginStart="32dp"
-                android:layout_marginEnd="32dp"
                 android:layout_marginTop="24dp"
+                android:layout_marginEnd="32dp"
                 android:layout_marginBottom="24dp"
+                android:background="@drawable/white_search_edittext"
+                android:drawableEnd="@drawable/search_icon"
+                android:elevation="3dp"
+                android:ems="10"
+                android:hint="Search..."
+                android:inputType="textPersonName"
                 android:paddingStart="16dp"
                 android:paddingEnd="4dp"
-                android:drawableEnd="@drawable/search_icon"
-                android:ems="10"
-                android:inputType="textPersonName"
-                android:background="@drawable/white_search_edittext"
-                android:hint="Search..."
-                android:elevation="3dp"
-                android:textStyle="bold|italic"
                 android:textColor="#8d8d8d"
                 android:textColorHint="#8d8d8d"
-                android:textSize="16sp"/>
+                android:textSize="16sp"
+                android:textStyle="bold|italic" />
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <!-- Events Section -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:background="@drawable/green_banner_background"
-                android:layout_marginEnd="32dp"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="32dp"
-
-                android:layout_height="170dp">
-
-                <ImageView
-                    android:id="@+id/imageView12"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:srcCompat="@drawable/logo_banner" />
+                android:layout_marginEnd="32dp"
+                android:layout_marginBottom="16dp"
+                android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/textView15"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
-                    android:text="Title"
-                    android:textColor="#fedd06"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    app:layout_constraintEnd_toStartOf="@+id/imageView12"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="@+id/imageView12" />
-
-                <TextView
-                    android:id="@+id/textView16"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="Description"
-                    android:textColor="#ffffff"
+                    android:layout_marginBottom="8dp"
+                    android:layout_marginStart="5dp"
+                    android:text="Upcoming Events"
+                    android:textColor="#FF0000"
                     android:textSize="18sp"
-                    app:layout_constraintEnd_toStartOf="@+id/imageView12"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/textView15" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
+                    android:textStyle="bold" />
 
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/eventsRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipToPadding="false"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    tools:listitem="@layout/item_event_slider" />
+
+            </LinearLayout>
+
+
+
+            <!-- Menu Grid -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -290,7 +278,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="1"
+                            android:text="Members"
                             android:textAlignment="center"
                             android:textColor="#2e3d6d"
                             android:textStyle="bold" />
@@ -324,7 +312,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="1"
+                            android:text="Events"
                             android:textAlignment="center"
                             android:textColor="#2e3d6d"
                             android:textStyle="bold" />
@@ -358,7 +346,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="1"
+                            android:text="Gallery"
                             android:textAlignment="center"
                             android:textColor="#2e3d6d"
                             android:textStyle="bold" />
@@ -392,7 +380,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="1"
+                            android:text="Messages"
                             android:textAlignment="center"
                             android:textColor="#2e3d6d"
                             android:textStyle="bold" />
@@ -433,7 +421,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="1"
+                            android:text="Directory"
                             android:textAlignment="center"
                             android:textColor="#2e3d6d"
                             android:textStyle="bold" />
@@ -467,7 +455,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="1"
+                            android:text="Announcements"
                             android:textAlignment="center"
                             android:textColor="#2e3d6d"
                             android:textStyle="bold" />
@@ -501,7 +489,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="1"
+                            android:text="Donations"
                             android:textAlignment="center"
                             android:textColor="#2e3d6d"
                             android:textStyle="bold" />
@@ -535,7 +523,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="1"
+                            android:text="Settings"
                             android:textAlignment="center"
                             android:textColor="#2e3d6d"
                             android:textStyle="bold" />
