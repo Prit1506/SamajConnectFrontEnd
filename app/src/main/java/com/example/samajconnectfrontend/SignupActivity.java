@@ -658,11 +658,17 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, SIGNUP_URL, userData,
                 response -> {
                     try {
-                        String message = response.optString("message", "Registration successful!");
-                        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                        if(response.getBoolean("success")) {
+                            String message = response.optString("message", "Registration successful!");
+                            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
 
-                        // Navigate to OTP activity
-                        navigateToOtpActivity();
+                            // Navigate to OTP activity
+                            navigateToOtpActivity();
+                        }else {
+                            resetRegisterButton();
+                            Toast.makeText(this, response.getString("message"), Toast.LENGTH_SHORT).show();
+                        }
+
 
                     } catch (Exception e) {
                         Log.e(TAG, "Error parsing registration response", e);
