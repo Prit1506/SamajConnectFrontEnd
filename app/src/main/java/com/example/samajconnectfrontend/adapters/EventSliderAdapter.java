@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -56,17 +57,25 @@ public class EventSliderAdapter extends RecyclerView.Adapter<EventSliderAdapter.
         String formattedDate = formatDate(event.getEventDate());
         holder.dateTextView.setText(formattedDate);
 
-        // Set image from base64
-        if (event.getImageBase64() != null && !event.getImageBase64().isEmpty()) {
+        // Decode base64 image and set to ImageView
+        String base64Image = event.getImageBase64();
+        Log.d("EventImage", "Base64 length: " + (event.getImageBase64() != null ? event.getImageBase64().length() : "null"));
+
+        if (base64Image != null && !base64Image.isEmpty()) {
             try {
-                byte[] imageBytes = Base64.decode(event.getImageBase64(), Base64.DEFAULT);
-                Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-                holder.eventImageView.setImageBitmap(bitmap);
-            } catch (Exception e) {
-                holder.eventImageView.setImageResource(R.drawable.logo_banner); // fallback image
+                byte[] decodedString = Base64.decode(base64Image, Base64.DEFAULT);
+                Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                if (decodedByte != null) {
+                    holder.eventImageView.setImageBitmap(decodedByte);
+                } else {
+                    holder.eventImageView.setImageResource(R.drawable.logo_banner);
+                    Log.e("Decode", "Decoded bitmap is null");
+                }
+            } catch (IllegalArgumentException e) {
+                Log.e("Adapter", "Failed to decode base64 image", e);
             }
         } else {
-            holder.eventImageView.setImageResource(R.drawable.logo_banner); // fallback image
+            holder.eventImageView.setImageResource(R.drawable.logo_banner); // fallback
         }
 
         // Set click listener

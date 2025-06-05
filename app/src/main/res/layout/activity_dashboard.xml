@@ -101,6 +101,7 @@
                     app:layout_constraintTop_toBottomOf="@+id/constraintLayout">
 
                     <LinearLayout
+                        android:id="@+id/eventsLinearLayout"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_margin="12dp"
@@ -113,14 +114,14 @@
                             android:layout_width="85dp"
                             android:layout_height="65dp"
                             android:layout_margin="8dp"
-                            tools:srcCompat="@drawable/voice_call" />
+                            android:src="@drawable/voice_call"/>
 
                         <TextView
                             android:id="@+id/textView12"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="4dp"
-                            android:text="Voice Call"
+                            android:text="Events"
                             android:textAlignment="center"
                             android:textColor="@color/white"
                             android:textStyle="bold|italic" />
@@ -140,7 +141,7 @@
                             android:layout_width="85dp"
                             android:layout_height="65dp"
                             android:layout_margin="8dp"
-                            tools:srcCompat="@drawable/video_call" />
+                            android:src="@drawable/video_call" />
 
                         <TextView
                             android:id="@+id/textView13"
@@ -167,7 +168,7 @@
                             android:layout_width="85dp"
                             android:layout_height="65dp"
                             android:layout_margin="8dp"
-                            tools:srcCompat="@drawable/notification" />
+                            android:src="@drawable/notification" />
 
                         <TextView
                             android:id="@+id/textView14"
