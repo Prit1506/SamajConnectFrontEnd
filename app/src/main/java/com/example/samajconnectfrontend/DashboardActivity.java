@@ -1,5 +1,6 @@
 package com.example.samajconnectfrontend;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
@@ -10,7 +11,9 @@ import androidx.core.view.WindowInsetsCompat;
 
 import android.content.SharedPreferences;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -38,6 +41,8 @@ public class DashboardActivity extends AppCompatActivity {
 
     private TextView userNameTextView, samajNameTextView;
     private ImageView profileImageView;
+    private LinearLayout eventsLinearLayout;
+
     private RecyclerView eventsRecyclerView;
     private EventSliderAdapter eventSliderAdapter;
     private List<Event> eventsList;
@@ -60,7 +65,8 @@ public class DashboardActivity extends AppCompatActivity {
             return insets;
         });
 
-
+        eventsLinearLayout = findViewById(R.id.eventsLinearLayout);
+        eventsLinearLayout.setOnClickListener(view -> startActivity(new Intent(DashboardActivity.this, EventActivity.class)));
 
 
         requestQueue = Volley.newRequestQueue(this);
@@ -179,6 +185,12 @@ public class DashboardActivity extends AppCompatActivity {
             // Check if response has success field
             if (response.has("success") && response.getBoolean("success")) {
                 JSONObject userData = response.getJSONObject("user");
+                SharedPreferences sharedPreferences = getSharedPreferences("SamajConnect", MODE_PRIVATE);
+                Log.d("DashboardActivity", "isAdmin from user details: " + userData.getBoolean("isAdmin"));
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putBoolean("is_admin", userData.getBoolean("isAdmin"));
+                editor.apply();
+
                 if (userData.has("samaj") && !userData.isNull("samaj")) {
                     JSONObject samajData = userData.getJSONObject("samaj");
                     currentSamajId = samajData.getLong("id");
