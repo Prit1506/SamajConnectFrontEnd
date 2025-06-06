@@ -7,4 +7,33 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- Primary Colors -->
+    <color name="colorPrimary">#1db7ae</color>
+    <color name="colorPrimaryDark">#00a693</color>
+    <color name="colorAccent">#ff6b6b</color>
+
+    <!-- Material Design Colors -->
+    <color name="colorPrimaryVariant">#00a693</color>
+    <color name="colorSecondary">#ff6b6b</color>
+    <color name="colorSecondaryVariant">#ff5252</color>
+
+    <!-- Text Colors -->
+    <color name="colorOnPrimary">#FFFFFF</color>
+    <color name="colorOnSecondary">#FFFFFF</color>
+    <color name="colorOnBackground">#1a1a1a</color>
+    <color name="colorOnSurface">#1a1a1a</color>
+
+    <!-- Background Colors -->
+    <color name="colorBackground">#FFFFFF</color>
+    <color name="colorSurface">#FFFFFF</color>
+
+    <color name="gray_light">#f5f5f5</color>
+    <color name="gray_medium">#888888</color>
+    <color name="gray_dark">#555555</color>
+
+    <!-- Event specific colors -->
+    <color name="event_title_color">#1a1a1a</color>
+    <color name="event_description_color">#555555</color>
+    <color name="event_date_color">#1db7ae</color>
+    <color name="event_location_color">#ff6b6b</color>
 </resources>

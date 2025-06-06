@@ -194,6 +194,8 @@ public class DashboardActivity extends AppCompatActivity {
                 if (userData.has("samaj") && !userData.isNull("samaj")) {
                     JSONObject samajData = userData.getJSONObject("samaj");
                     currentSamajId = samajData.getLong("id");
+                    editor.putLong("samaj_id", currentSamajId);
+                    editor.apply();
                     Log.d("DashboardActivity", "Found samaj_id from user details: " + currentSamajId);
 
                     // Now load samaj details and events
@@ -208,6 +210,8 @@ public class DashboardActivity extends AppCompatActivity {
                 if (response.has("samaj") && !response.isNull("samaj")) {
                     JSONObject samajData = response.getJSONObject("samaj");
                     currentSamajId = samajData.getLong("id");
+
+
                     Log.d("DashboardActivity", "Found samaj_id from direct parsing: " + currentSamajId);
 
                     // Now load samaj details and events
