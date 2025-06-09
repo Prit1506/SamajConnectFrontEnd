@@ -2,6 +2,8 @@ package com.example.samajconnectfrontend;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.PagerSnapHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.DefaultRetryPolicy;
@@ -48,6 +51,15 @@ public class DashboardActivity extends AppCompatActivity {
     private List<Event> eventsList;
     private RequestQueue requestQueue;
     private Long currentUserId;
+    private LinearLayoutManager layoutManager;
+
+    // Auto-scroll variables
+    private Handler autoScrollHandler;
+    private Runnable autoScrollRunnable;
+    private static final int AUTO_SCROLL_DELAY = 3000; // 3 seconds
+    private static final int PAUSE_DELAY_AFTER_USER_SCROLL = 5000; // 5 seconds pause after user interaction
+    private int currentPosition = 0;
+    private boolean isAutoScrollEnabled = true;
 
     private static final String USER_URL = "http://10.0.2.2:8080/api/users/";
     private static final String EVENT_URL = "http://10.0.2.2:8080/api/events/";
@@ -68,37 +80,128 @@ public class DashboardActivity extends AppCompatActivity {
         eventsLinearLayout = findViewById(R.id.eventsLinearLayout);
         eventsLinearLayout.setOnClickListener(view -> startActivity(new Intent(DashboardActivity.this, EventActivity.class)));
 
-
         requestQueue = Volley.newRequestQueue(this);
         initializeViews();
         setupRecyclerView();
+        setupAutoScroll();
         loadUserData();
         loadUserDetails();
     }
-
-
 
     private void initializeViews() {
         userNameTextView = findViewById(R.id.textView10);
         samajNameTextView = findViewById(R.id.textView11);
         profileImageView = findViewById(R.id.imageView4);
-        eventsRecyclerView = findViewById(R.id.eventsRecyclerView); // Add this to your XML
+        eventsRecyclerView = findViewById(R.id.eventsRecyclerView);
     }
 
     private void setupRecyclerView() {
         eventsList = new ArrayList<>();
         eventSliderAdapter = new EventSliderAdapter(this, eventsList);
 
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         eventsRecyclerView.setLayoutManager(layoutManager);
         eventsRecyclerView.setAdapter(eventSliderAdapter);
 
+        // Add snap behavior for better positioning (each item snaps to center)
+        PagerSnapHelper snapHelper = new PagerSnapHelper();
+        snapHelper.attachToRecyclerView(eventsRecyclerView);
+
         // Set click listener for events
         eventSliderAdapter.setOnEventClickListener(event -> {
-            // Handle event click - navigate to event details
             Toast.makeText(this, "Clicked: " + event.getEventTitle(), Toast.LENGTH_SHORT).show();
-            // You can add navigation to EventDetailsActivity here
         });
+
+        // Add scroll listener to handle user interaction
+        eventsRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+
+                // When user starts scrolling, stop auto-scroll
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    stopAutoScroll();
+                    Log.d("DashboardActivity", "User started scrolling - auto-scroll paused");
+                }
+                // When user stops scrolling, restart auto-scroll after delay
+                else if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    updateCurrentPosition();
+                    startAutoScrollWithDelay(PAUSE_DELAY_AFTER_USER_SCROLL);
+                    Log.d("DashboardActivity", "User stopped scrolling - auto-scroll will resume in " + PAUSE_DELAY_AFTER_USER_SCROLL + "ms");
+                }
+            }
+        });
+    }
+
+    private void setupAutoScroll() {
+        autoScrollHandler = new Handler(Looper.getMainLooper());
+        autoScrollRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (eventsList != null && eventsList.size() > 1 && isAutoScrollEnabled) {
+                    currentPosition++;
+
+                    // Reset to beginning if we reach the end
+                    if (currentPosition >= eventsList.size()) {
+                        currentPosition = 0;
+                        // For seamless transition when wrapping around
+                        eventsRecyclerView.scrollToPosition(currentPosition);
+                        Log.d("DashboardActivity", "Auto-scroll wrapped to beginning");
+                    } else {
+                        // Smooth scroll to next position
+                        eventsRecyclerView.smoothScrollToPosition(currentPosition);
+                        Log.d("DashboardActivity", "Auto-scroll to position: " + currentPosition);
+                    }
+
+                    // Schedule next scroll
+                    autoScrollHandler.postDelayed(this, AUTO_SCROLL_DELAY);
+                }
+            }
+        };
+    }
+
+    private void startAutoScroll() {
+        if (autoScrollHandler != null && autoScrollRunnable != null && isAutoScrollEnabled) {
+            stopAutoScroll(); // Stop any existing auto-scroll
+            autoScrollHandler.postDelayed(autoScrollRunnable, AUTO_SCROLL_DELAY);
+            Log.d("DashboardActivity", "Auto-scroll started");
+        }
+    }
+
+    private void startAutoScrollWithDelay(long delay) {
+        if (autoScrollHandler != null && autoScrollRunnable != null && isAutoScrollEnabled) {
+            stopAutoScroll(); // Stop any existing auto-scroll
+            autoScrollHandler.postDelayed(autoScrollRunnable, delay);
+            Log.d("DashboardActivity", "Auto-scroll scheduled to start in " + delay + "ms");
+        }
+    }
+
+    private void stopAutoScroll() {
+        if (autoScrollHandler != null && autoScrollRunnable != null) {
+            autoScrollHandler.removeCallbacks(autoScrollRunnable);
+            Log.d("DashboardActivity", "Auto-scroll stopped");
+        }
+    }
+
+    private void updateCurrentPosition() {
+        if (layoutManager != null) {
+            int firstVisiblePosition = layoutManager.findFirstCompletelyVisibleItemPosition();
+            if (firstVisiblePosition != RecyclerView.NO_POSITION) {
+                currentPosition = firstVisiblePosition;
+                Log.d("DashboardActivity", "Current position updated to: " + currentPosition);
+            }
+        }
+    }
+
+    // Method to toggle auto-scroll (useful for user preference)
+    public void toggleAutoScroll(boolean enabled) {
+        isAutoScrollEnabled = enabled;
+        if (enabled && eventsList != null && eventsList.size() > 1) {
+            startAutoScroll();
+        } else {
+            stopAutoScroll();
+        }
+        Log.d("DashboardActivity", "Auto-scroll " + (enabled ? "enabled" : "disabled"));
     }
 
     private void loadUserData() {
@@ -210,7 +313,6 @@ public class DashboardActivity extends AppCompatActivity {
                 if (response.has("samaj") && !response.isNull("samaj")) {
                     JSONObject samajData = response.getJSONObject("samaj");
                     currentSamajId = samajData.getLong("id");
-
 
                     Log.d("DashboardActivity", "Found samaj_id from direct parsing: " + currentSamajId);
 
@@ -405,8 +507,20 @@ public class DashboardActivity extends AppCompatActivity {
                 eventSliderAdapter.updateEvents(eventsList);
 
                 Log.d("DashboardActivity", "Loaded " + eventsList.size() + " events");
+
+                // Start auto-scroll only if we have multiple events
+                if (eventsList.size() > 1) {
+                    currentPosition = 0; // Reset position
+                    startAutoScroll();
+                    Log.d("DashboardActivity", "Auto-scroll started for " + eventsList.size() + " events");
+                } else if (eventsList.size() == 1) {
+                    Log.d("DashboardActivity", "Only 1 event found - auto-scroll not needed");
+                } else {
+                    Log.d("DashboardActivity", "No events found - auto-scroll not started");
+                }
             } else {
                 Toast.makeText(this, "No events found", Toast.LENGTH_SHORT).show();
+                Log.d("DashboardActivity", "No events found in response");
             }
 
         } catch (Exception e) {
@@ -431,5 +545,36 @@ public class DashboardActivity extends AppCompatActivity {
         }
 
         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Resume auto-scroll when activity comes back to foreground
+        if (eventsList != null && eventsList.size() > 1 && isAutoScrollEnabled) {
+            startAutoScroll();
+            Log.d("DashboardActivity", "Activity resumed - auto-scroll restarted");
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Stop auto-scroll when activity goes to background
+        stopAutoScroll();
+        Log.d("DashboardActivity", "Activity paused - auto-scroll stopped");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Clean up handler to prevent memory leaks
+        stopAutoScroll();
+        if (autoScrollHandler != null) {
+            autoScrollHandler.removeCallbacksAndMessages(null);
+            autoScrollHandler = null;
+        }
+        autoScrollRunnable = null;
+        Log.d("DashboardActivity", "Activity destroyed - auto-scroll cleaned up");
     }
 }
