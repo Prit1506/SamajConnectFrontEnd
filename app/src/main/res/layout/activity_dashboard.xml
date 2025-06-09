@@ -175,7 +175,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="4dp"
-                            android:text="Notifications"
+                            android:text="Group Chat"
                             android:textAlignment="center"
                             android:textColor="@color/white"
                             android:textStyle="bold|italic" />
