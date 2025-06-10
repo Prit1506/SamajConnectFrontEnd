@@ -10,14 +10,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.content.SharedPreferences;
 import android.util.Log;
 import android.view.View;
+import android.view.MotionEvent;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ScrollView;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.PagerSnapHelper;
@@ -45,6 +48,8 @@ public class DashboardActivity extends AppCompatActivity {
     private TextView userNameTextView, samajNameTextView;
     private ImageView profileImageView;
     private LinearLayout eventsLinearLayout;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private ScrollView mainScrollView;
 
     private RecyclerView eventsRecyclerView;
     private EventSliderAdapter eventSliderAdapter;
@@ -60,6 +65,13 @@ public class DashboardActivity extends AppCompatActivity {
     private static final int PAUSE_DELAY_AFTER_USER_SCROLL = 5000; // 5 seconds pause after user interaction
     private int currentPosition = 0;
     private boolean isAutoScrollEnabled = true;
+
+    // Touch detection variables for additional refresh triggers
+    private float initialY;
+    private boolean isRefreshing = false;
+    private static final float MIN_SWIPE_DISTANCE = 100; // Minimum distance for swipe detection
+    private static final float MAX_SWIPE_TIME = 500; // Maximum time for swipe in milliseconds
+    private long swipeStartTime;
 
     private static final String USER_URL = "http://10.0.2.2:8080/api/users/";
     private static final String EVENT_URL = "http://10.0.2.2:8080/api/events/";
@@ -77,15 +89,13 @@ public class DashboardActivity extends AppCompatActivity {
             return insets;
         });
 
-        eventsLinearLayout = findViewById(R.id.eventsLinearLayout);
-        eventsLinearLayout.setOnClickListener(view -> startActivity(new Intent(DashboardActivity.this, EventActivity.class)));
-
         requestQueue = Volley.newRequestQueue(this);
         initializeViews();
+        setupSwipeRefresh();
+        setupTouchListeners();
         setupRecyclerView();
         setupAutoScroll();
-        loadUserData();
-        loadUserDetails();
+        loadAllData();
     }
 
     private void initializeViews() {
@@ -93,6 +103,128 @@ public class DashboardActivity extends AppCompatActivity {
         samajNameTextView = findViewById(R.id.textView11);
         profileImageView = findViewById(R.id.imageView4);
         eventsRecyclerView = findViewById(R.id.eventsRecyclerView);
+        eventsLinearLayout = findViewById(R.id.eventsLinearLayout);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        mainScrollView = findViewById(R.id.mainScrollView);
+
+        eventsLinearLayout.setOnClickListener(view ->
+                startActivity(new Intent(DashboardActivity.this, EventActivity.class)));
+    }
+
+    private void setupSwipeRefresh() {
+        // Configure SwipeRefreshLayout
+        swipeRefreshLayout.setColorSchemeResources(
+                android.R.color.holo_blue_bright,
+                android.R.color.holo_green_light,
+                android.R.color.holo_orange_light,
+                android.R.color.holo_red_light
+        );
+
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            Log.d("DashboardActivity", "Pull-to-refresh triggered");
+            refreshAllData();
+        });
+    }
+
+    private void setupTouchListeners() {
+        // Add touch listener to the main view for additional refresh triggers
+        View mainView = findViewById(R.id.main);
+        mainView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        initialY = event.getY();
+                        swipeStartTime = System.currentTimeMillis();
+                        return false; // Don't consume the event
+
+                    case MotionEvent.ACTION_UP:
+                        if (!isRefreshing) {
+                            float finalY = event.getY();
+                            float deltaY = finalY - initialY;
+                            long swipeTime = System.currentTimeMillis() - swipeStartTime;
+
+                            // Check for downward swipe at the top of the screen
+                            if (deltaY > MIN_SWIPE_DISTANCE && swipeTime < MAX_SWIPE_TIME &&
+                                    mainScrollView.getScrollY() == 0) {
+                                Log.d("DashboardActivity", "Downward swipe detected at top - refreshing");
+                                refreshAllData();
+                                return true;
+                            }
+
+                            // Check for quick double tap anywhere on screen
+                            if (swipeTime < 200 && Math.abs(deltaY) < 50) {
+                                // This could be part of a double tap - you might want to implement
+                                // a double tap detector here if needed
+                            }
+                        }
+                        return false;
+
+                    default:
+                        return false;
+                }
+            }
+        });
+
+        // Add scroll listener to detect when user reaches top and tries to scroll up more
+        mainScrollView.getViewTreeObserver().addOnScrollChangedListener(() -> {
+            // Optional: You can add additional logic here if needed
+        });
+    }
+
+    private void refreshAllData() {
+        if (isRefreshing) {
+            Log.d("DashboardActivity", "Already refreshing, ignoring request");
+            return;
+        }
+
+        isRefreshing = true;
+        swipeRefreshLayout.setRefreshing(true);
+
+        Log.d("DashboardActivity", "Starting data refresh...");
+
+        // Show a toast to indicate refresh
+        Toast.makeText(this, "Refreshing...", Toast.LENGTH_SHORT).show();
+
+        // Stop auto-scroll during refresh
+        stopAutoScroll();
+
+        // Clear existing data
+        if (eventsList != null) {
+            eventsList.clear();
+            eventSliderAdapter.notifyDataSetChanged();
+        }
+
+        // Reload all data
+        loadAllData();
+    }
+
+    private void loadAllData() {
+        Log.d("DashboardActivity", "Loading all data...");
+        loadUserData();
+        loadUserDetails();
+        // Events will be loaded after user details are loaded and samajId is obtained
+    }
+
+    private void onDataLoadComplete() {
+        isRefreshing = false;
+        swipeRefreshLayout.setRefreshing(false);
+
+        // Restart auto-scroll if we have events
+        if (eventsList != null && eventsList.size() > 1) {
+            currentPosition = 0;
+            startAutoScroll();
+        }
+
+        Log.d("DashboardActivity", "Data refresh completed");
+        Toast.makeText(this, "Refreshed successfully", Toast.LENGTH_SHORT).show();
+    }
+
+    private void onDataLoadError() {
+        isRefreshing = false;
+        swipeRefreshLayout.setRefreshing(false);
+        Log.e("DashboardActivity", "Data refresh failed");
+        Toast.makeText(this, "Refresh failed", Toast.LENGTH_SHORT).show();
     }
 
     private void setupRecyclerView() {
@@ -126,7 +258,9 @@ public class DashboardActivity extends AppCompatActivity {
                 // When user stops scrolling, restart auto-scroll after delay
                 else if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     updateCurrentPosition();
-                    startAutoScrollWithDelay(PAUSE_DELAY_AFTER_USER_SCROLL);
+                    if (!isRefreshing) { // Don't start auto-scroll during refresh
+                        startAutoScrollWithDelay(PAUSE_DELAY_AFTER_USER_SCROLL);
+                    }
                     Log.d("DashboardActivity", "User stopped scrolling - auto-scroll will resume in " + PAUSE_DELAY_AFTER_USER_SCROLL + "ms");
                 }
             }
@@ -138,7 +272,7 @@ public class DashboardActivity extends AppCompatActivity {
         autoScrollRunnable = new Runnable() {
             @Override
             public void run() {
-                if (eventsList != null && eventsList.size() > 1 && isAutoScrollEnabled) {
+                if (eventsList != null && eventsList.size() > 1 && isAutoScrollEnabled && !isRefreshing) {
                     currentPosition++;
 
                     // Reset to beginning if we reach the end
@@ -161,7 +295,7 @@ public class DashboardActivity extends AppCompatActivity {
     }
 
     private void startAutoScroll() {
-        if (autoScrollHandler != null && autoScrollRunnable != null && isAutoScrollEnabled) {
+        if (autoScrollHandler != null && autoScrollRunnable != null && isAutoScrollEnabled && !isRefreshing) {
             stopAutoScroll(); // Stop any existing auto-scroll
             autoScrollHandler.postDelayed(autoScrollRunnable, AUTO_SCROLL_DELAY);
             Log.d("DashboardActivity", "Auto-scroll started");
@@ -169,7 +303,7 @@ public class DashboardActivity extends AppCompatActivity {
     }
 
     private void startAutoScrollWithDelay(long delay) {
-        if (autoScrollHandler != null && autoScrollRunnable != null && isAutoScrollEnabled) {
+        if (autoScrollHandler != null && autoScrollRunnable != null && isAutoScrollEnabled && !isRefreshing) {
             stopAutoScroll(); // Stop any existing auto-scroll
             autoScrollHandler.postDelayed(autoScrollRunnable, delay);
             Log.d("DashboardActivity", "Auto-scroll scheduled to start in " + delay + "ms");
@@ -196,7 +330,7 @@ public class DashboardActivity extends AppCompatActivity {
     // Method to toggle auto-scroll (useful for user preference)
     public void toggleAutoScroll(boolean enabled) {
         isAutoScrollEnabled = enabled;
-        if (enabled && eventsList != null && eventsList.size() > 1) {
+        if (enabled && eventsList != null && eventsList.size() > 1 && !isRefreshing) {
             startAutoScroll();
         } else {
             stopAutoScroll();
@@ -239,6 +373,7 @@ public class DashboardActivity extends AppCompatActivity {
         if (currentUserId == null || currentUserId <= 0) {
             Log.w("DashboardActivity", "Invalid user ID: " + currentUserId);
             samajNameTextView.setText("Your Samaj");
+            onDataLoadError();
             return;
         }
 
@@ -307,6 +442,7 @@ public class DashboardActivity extends AppCompatActivity {
                 } else {
                     Log.w("DashboardActivity", "No samaj data found in user details");
                     samajNameTextView.setText("No Samaj Assigned");
+                    onDataLoadError();
                 }
             } else {
                 // If response doesn't have success field, try direct parsing
@@ -322,6 +458,7 @@ public class DashboardActivity extends AppCompatActivity {
                 } else {
                     Log.w("DashboardActivity", "No samaj data found in response");
                     samajNameTextView.setText("No Samaj Assigned");
+                    onDataLoadError();
                 }
             }
 
@@ -329,6 +466,7 @@ public class DashboardActivity extends AppCompatActivity {
             Log.e("DashboardActivity", "Exception while parsing user details response: " + e.getMessage());
             e.printStackTrace();
             samajNameTextView.setText("Error Loading Samaj");
+            onDataLoadError();
         }
     }
 
@@ -353,12 +491,14 @@ public class DashboardActivity extends AppCompatActivity {
 
         samajNameTextView.setText("Error Loading");
         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+        onDataLoadError();
     }
 
     private void loadSamajData() {
         if (currentSamajId == null || currentSamajId <= 0) {
             Log.w("DashboardActivity", "Invalid samaj ID: " + currentSamajId);
             samajNameTextView.setText("Your Samaj");
+            onDataLoadError();
             return;
         }
 
@@ -461,9 +601,8 @@ public class DashboardActivity extends AppCompatActivity {
         }
 
         samajNameTextView.setText("Your Samaj");
-
-        // Show error message to user for debugging
         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+        onDataLoadError();
     }
 
     private void loadEvents() {
@@ -508,6 +647,9 @@ public class DashboardActivity extends AppCompatActivity {
 
                 Log.d("DashboardActivity", "Loaded " + eventsList.size() + " events");
 
+                // Complete data loading
+                onDataLoadComplete();
+
                 // Start auto-scroll only if we have multiple events
                 if (eventsList.size() > 1) {
                     currentPosition = 0; // Reset position
@@ -521,11 +663,13 @@ public class DashboardActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(this, "No events found", Toast.LENGTH_SHORT).show();
                 Log.d("DashboardActivity", "No events found in response");
+                onDataLoadComplete();
             }
 
         } catch (Exception e) {
             Log.e("DashboardActivity", "Error parsing events response", e);
             Toast.makeText(this, "Error loading events", Toast.LENGTH_SHORT).show();
+            onDataLoadError();
         }
     }
 
@@ -545,13 +689,14 @@ public class DashboardActivity extends AppCompatActivity {
         }
 
         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+        onDataLoadError();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         // Resume auto-scroll when activity comes back to foreground
-        if (eventsList != null && eventsList.size() > 1 && isAutoScrollEnabled) {
+        if (eventsList != null && eventsList.size() > 1 && isAutoScrollEnabled && !isRefreshing) {
             startAutoScroll();
             Log.d("DashboardActivity", "Activity resumed - auto-scroll restarted");
         }
