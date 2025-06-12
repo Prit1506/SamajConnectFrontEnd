@@ -236,17 +236,19 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 Toast.makeText(context, "Please login to react to events", Toast.LENGTH_SHORT).show();
                 return;
             }
-            if (currentUserId == -1L) {
-                Toast.makeText(context, "Please login to react", Toast.LENGTH_SHORT).show();
-                return;
-            }
 
             isLoadingReaction = true;
             updateReactionButtonsLoadingState(true);
 
-            boolean isTogglingSame;
             // Check if user is toggling the same reaction (remove) or changing reaction
-            isTogglingSame = currentStats != null && currentStats.getUserReaction().equalsIgnoreCase(reactionType.name());
+            boolean isTogglingSame;
+            if (currentStats != null && currentStats.hasUserReacted()) {
+                String currentUserReaction = currentStats.getUserReaction();
+                isTogglingSame = currentUserReaction != null &&
+                        currentUserReaction.equalsIgnoreCase(reactionType.name());
+            } else {
+                isTogglingSame = false;
+            }
 
             String url = REACTION_BASE_URL + event.getIdAsLong() + "/reactions";
 
@@ -404,6 +406,9 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 currentStats = new ReactionStats(0, 0);
             }
 
+            Log.d(TAG, "Updating reaction UI - User reaction: " +
+                    (currentStats.hasUserReacted() ? currentStats.getUserReaction() : "No reaction"));
+
             // Update counts
             likeCountText.setText(String.valueOf(currentStats.getLikeCount()));
             dislikeCountText.setText(String.valueOf(currentStats.getDislikeCount()));
@@ -422,28 +427,35 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
             // Update view reactions text
             if (isAdmin) {
-                String reactionsText = "All Reactions";
+                String reactionsText = "All Reactions (" + currentStats.getTotalReactions() + ")";
                 viewReactionsText.setText(reactionsText);
             }
         }
 
         private void updateReactionButtonStates() {
+            // Reset to default state first
+            likeIcon.setImageResource(R.drawable.ic_thumb_up_outline);
+            dislikeIcon.setImageResource(R.drawable.ic_thumb_down_outline);
+
+            // Reset colors to default (you might want to set default colors here)
+            ImageViewCompat.setImageTintList(likeIcon, null);
+            ImageViewCompat.setImageTintList(dislikeIcon, null);
+
+            // Update based on user's current reaction
             if (currentStats != null && currentStats.hasUserReacted()) {
-
                 if (currentStats.hasUserLiked()) {
-                    // Set filled icon for like, outline for dislike
+                    // User has liked - show filled like icon
                     likeIcon.setImageResource(R.drawable.ic_thumb_up_filled);
-                    dislikeIcon.setImageResource(R.drawable.ic_thumb_down_outline);
-
+                    // Optionally set a different color for active state
+                    ImageViewCompat.setImageTintList(likeIcon,
+                            ColorStateList.valueOf(ContextCompat.getColor(context, R.color.like_active_color)));
                 } else if (currentStats.hasUserDisliked()) {
-                    // Set filled icon for dislike, outline for like
+                    // User has disliked - show filled dislike icon
                     dislikeIcon.setImageResource(R.drawable.ic_thumb_down_filled);
-                    likeIcon.setImageResource(R.drawable.ic_thumb_up_outline);
+                    // Optionally set a different color for active state
+                    ImageViewCompat.setImageTintList(dislikeIcon,
+                            ColorStateList.valueOf(ContextCompat.getColor(context, R.color.dislike_active_color)));
                 }
-            } else {
-                 // Reset both to outline state
-                likeIcon.setImageResource(R.drawable.ic_thumb_up_outline);
-                dislikeIcon.setImageResource(R.drawable.ic_thumb_down_outline);
             }
         }
 

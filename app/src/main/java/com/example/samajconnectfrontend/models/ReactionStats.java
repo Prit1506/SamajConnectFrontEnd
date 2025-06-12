@@ -4,17 +4,29 @@ public class ReactionStats {
     private long likeCount;
     private long dislikeCount;
     private long totalReactions;
-    private EventReaction userReaction;
+    private EventReaction userReaction; // This should be EventReaction object, not long counts
     private double likePercentage;
     private double dislikePercentage;
 
     // Constructors
-    public ReactionStats() {}
+    public ReactionStats() {
+        this.userReaction = null;
+        calculatePercentages();
+    }
 
     public ReactionStats(long likeCount, long dislikeCount) {
         this.likeCount = likeCount;
         this.dislikeCount = dislikeCount;
         this.totalReactions = likeCount + dislikeCount;
+        this.userReaction = null;
+        calculatePercentages();
+    }
+
+    public ReactionStats(long likeCount, long dislikeCount, EventReaction userReaction) {
+        this.likeCount = likeCount;
+        this.dislikeCount = dislikeCount;
+        this.totalReactions = likeCount + dislikeCount;
+        this.userReaction = userReaction;
         calculatePercentages();
     }
 
@@ -47,8 +59,16 @@ public class ReactionStats {
         this.totalReactions = totalReactions;
     }
 
+    // Fixed: This should return the user's reaction type as string, not based on counts
     public String getUserReaction() {
-        return likeCount>=1?"LIKE":"DISLIKE";
+        if (userReaction != null && userReaction.getReactionType() != null) {
+            return userReaction.getReactionType().toUpperCase();
+        }
+        return null; // User hasn't reacted
+    }
+
+    public EventReaction getUserReactionObject() {
+        return userReaction;
     }
 
     public void setUserReaction(EventReaction userReaction) {
@@ -82,16 +102,23 @@ public class ReactionStats {
         }
     }
 
+    // Fixed: Check if user has reacted based on userReaction object
     public boolean hasUserReacted() {
-        return likeCount >= 1 || dislikeCount >= 1;
+        return userReaction != null && userReaction.getReactionType() != null;
     }
 
+    // Fixed: Check if user liked based on userReaction object
     public boolean hasUserLiked() {
-        return likeCount >= 1;
+        return userReaction != null &&
+                userReaction.getReactionType() != null &&
+                userReaction.getReactionType().equalsIgnoreCase("LIKE");
     }
 
+    // Fixed: Check if user disliked based on userReaction object
     public boolean hasUserDisliked() {
-        return dislikeCount >= 1;
+        return userReaction != null &&
+                userReaction.getReactionType() != null &&
+                userReaction.getReactionType().equalsIgnoreCase("DISLIKE");
     }
 
     public String getReactionSummary() {
@@ -110,7 +137,7 @@ public class ReactionStats {
                 "likeCount=" + likeCount +
                 ", dislikeCount=" + dislikeCount +
                 ", totalReactions=" + totalReactions +
-                ", userReaction=" + userReaction +
+                ", userReaction=" + (userReaction != null ? userReaction.getReactionType() : "null") +
                 ", likePercentage=" + likePercentage +
                 ", dislikePercentage=" + dislikePercentage +
                 '}';
