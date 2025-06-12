@@ -5,6 +5,7 @@ import com.example.samajconnectfrontend.R;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.text.TextUtils;
@@ -20,6 +21,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+import androidx.core.widget.ImageViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
@@ -34,9 +36,11 @@ import com.example.samajconnectfrontend.models.EventReaction;
 import com.example.samajconnectfrontend.models.ReactionRequest;
 import com.example.samajconnectfrontend.models.ReactionStats;
 import com.example.samajconnectfrontend.models.ReactionType;
+import com.example.samajconnectfrontend.models.UserIdRequest;
 import com.google.android.material.button.MaterialButton;
 import com.google.gson.Gson;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.ParseException;
@@ -313,28 +317,34 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         private void loadReactionStats(Event event) {
             Log.d(TAG, "Loading public reaction stats for event: " + event.getIdAsLong());
 
-            // Use public endpoint that doesn't require authentication
-            String url = REACTION_BASE_URL + event.getIdAsLong() + "/reactions/stats/public";
+            String url = REACTION_BASE_URL + event.getIdAsLong() + "/reactions/stats";
 
-            // If you need user-specific data, add userId as query param only if available
-            String authToken = sharedPrefs.getString("auth_token", "");
-            if (!authToken.isEmpty() && currentUserId != -1L) {
-                url += "?userId=" + currentUserId;
+            JSONObject jsonBody = null;
+
+            // Include userId in request body only if available
+            if (currentUserId != -1L) {
+                UserIdRequest userIdRequest = new UserIdRequest(currentUserId);
+                Gson gson = new Gson();
+                String json = gson.toJson(userIdRequest);
+                try {
+                    jsonBody = new JSONObject(json);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
 
-            Log.d(TAG, "Making public request to URL: " + url);
+            Log.d(TAG, "Making request to URL: " + url);
 
             JsonObjectRequest request = new JsonObjectRequest(
-                    Request.Method.GET,
+                    Request.Method.POST,
                     url,
-                    null,
+                    jsonBody, // This can be null if no userId
                     response -> {
-                        Log.d(TAG, "✅ Public reaction stats response: " + response.toString());
+                        Log.d(TAG, "✅ Reaction stats response: " + response.toString());
                         handleReactionStatsResponse(response);
                     },
                     error -> {
-                        Log.e(TAG, "❌ Error loading public reaction stats", error);
-                        // Set default stats
+                        Log.e(TAG, "❌ Error loading reaction stats", error);
                         currentStats = new ReactionStats(0, 0);
                         updateReactionUI();
                     }
@@ -345,13 +355,12 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                     headers.put("Content-Type", "application/json");
                     headers.put("Accept", "application/json");
 
-                    // Only add auth header if token is available (for user-specific reactions)
                     String token = sharedPrefs.getString("auth_token", "");
                     if (!token.isEmpty()) {
                         headers.put("Authorization", "Bearer " + token);
                         Log.d(TAG, "📤 Added optional auth header");
                     } else {
-                        Log.d(TAG, "📤 Making public request without auth");
+                        Log.d(TAG, "📤 Making request without auth");
                     }
 
                     return headers;
@@ -360,6 +369,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
             requestQueue.add(request);
         }
+
 
 
         private void handleReactionStatsResponse(JSONObject response) {
@@ -412,36 +422,39 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
             // Update view reactions text
             if (isAdmin) {
-                String reactionsText = currentStats.getTotalReactions() == 0 ?
-                        "No reactions" : "View " + currentStats.getTotalReactions() + " reactions";
+                String reactionsText = "All Reactions";
                 viewReactionsText.setText(reactionsText);
             }
         }
 
         private void updateReactionButtonStates() {
-            // Reset to default state
+            // Reset all icons to default state
             likeIcon.setImageResource(R.drawable.ic_thumb_up_outline);
             dislikeIcon.setImageResource(R.drawable.ic_thumb_down_outline);
-            likeIcon.setColorFilter(ContextCompat.getColor(context, R.color.default_icon_color));
-            dislikeIcon.setColorFilter(ContextCompat.getColor(context, R.color.default_icon_color));
-            likeCountText.setTextColor(ContextCompat.getColor(context, R.color.default_icon_color));
-            dislikeCountText.setTextColor(ContextCompat.getColor(context, R.color.default_icon_color));
 
-            // Update based on user's reaction
+            int defaultColor = ContextCompat.getColor(context, R.color.default_icon_color);
+            int likeColor = ContextCompat.getColor(context, R.color.like_active_color);
+            int dislikeColor = ContextCompat.getColor(context, R.color.dislike_active_color);
+
+            // Apply tint using ImageViewCompat
+            ImageViewCompat.setImageTintList(likeIcon, ColorStateList.valueOf(defaultColor));
+            ImageViewCompat.setImageTintList(dislikeIcon, ColorStateList.valueOf(defaultColor));
+            likeCountText.setTextColor(defaultColor);
+            dislikeCountText.setTextColor(defaultColor);
+
             if (currentStats != null && currentStats.hasUserReacted()) {
                 if (currentStats.hasUserLiked()) {
-                    // User has liked
                     likeIcon.setImageResource(R.drawable.ic_thumb_up_filled);
-                    likeIcon.setColorFilter(ContextCompat.getColor(context, R.color.like_active_color));
-                    likeCountText.setTextColor(ContextCompat.getColor(context, R.color.like_active_color));
+                    ImageViewCompat.setImageTintList(likeIcon, ColorStateList.valueOf(likeColor));
+                    likeCountText.setTextColor(likeColor);
                 } else if (currentStats.hasUserDisliked()) {
-                    // User has disliked
                     dislikeIcon.setImageResource(R.drawable.ic_thumb_down_filled);
-                    dislikeIcon.setColorFilter(ContextCompat.getColor(context, R.color.dislike_active_color));
-                    dislikeCountText.setTextColor(ContextCompat.getColor(context, R.color.dislike_active_color));
+                    ImageViewCompat.setImageTintList(dislikeIcon, ColorStateList.valueOf(dislikeColor));
+                    dislikeCountText.setTextColor(dislikeColor);
                 }
             }
         }
+
 
         private void updateReactionProgress() {
             if (currentStats.getTotalReactions() == 0) {

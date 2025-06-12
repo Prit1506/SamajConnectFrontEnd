@@ -155,17 +155,18 @@
                         android:orientation="horizontal"
                         android:gravity="center_vertical"
                         android:background="@drawable/reaction_button_background"
-                        android:paddingHorizontal="16dp"
-                        android:paddingVertical="12dp"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="8dp"
                         android:layout_marginEnd="16dp"
                         android:clickable="true"
+                        android:layout_marginBottom="5dp"
                         android:focusable="true"
                         android:elevation="2dp">
 
                         <ImageView
                             android:id="@+id/likeIcon"
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:src="@drawable/ic_thumb_up_outline"
                             app:tint="#666666" />
 
@@ -191,8 +192,8 @@
                         android:orientation="horizontal"
                         android:gravity="center_vertical"
                         android:background="@drawable/reaction_button_background"
-                        android:paddingHorizontal="16dp"
-                        android:paddingVertical="12dp"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="8dp"
                         android:layout_marginEnd="16dp"
                         android:clickable="true"
                         android:focusable="true"
@@ -200,8 +201,8 @@
 
                         <ImageView
                             android:id="@+id/dislikeIcon"
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:src="@drawable/ic_thumb_down_outline"
                             app:tint="#666666" />
 
@@ -223,12 +224,12 @@
                     <LinearLayout
                         android:id="@+id/viewReactionsContainer"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_height="38dp"
                         android:orientation="horizontal"
-                        android:gravity="center_vertical"
                         android:background="@drawable/view_reactions_background"
                         android:paddingHorizontal="12dp"
                         android:paddingVertical="8dp"
+                        android:gravity="center"
                         android:clickable="true"
                         android:focusable="true">
 
@@ -243,7 +244,7 @@
                             android:id="@+id/viewReactionsText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="View reactions"
+                            android:text="All Reactions"
                             android:textColor="#1db7ae"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -308,7 +309,7 @@
                     android:id="@+id/updateEventButton"
                     style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                    android:layout_height="45dp"
                     android:layout_marginEnd="8dp"
                     android:text="Update"
                     android:textSize="12sp"
@@ -326,7 +327,7 @@
                     android:id="@+id/deleteEventButton"
                     style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                    android:layout_height="45dp"
                     android:text="Delete"
                     android:textSize="12sp"
                     android:textAllCaps="false"
