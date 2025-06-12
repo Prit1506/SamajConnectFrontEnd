@@ -132,6 +132,167 @@
 
             </LinearLayout>
 
+            <!-- Reaction Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:orientation="vertical">
+
+                <!-- Reaction Buttons Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="start"
+                    android:paddingVertical="8dp">
+
+                    <!-- Like Button Container -->
+                    <LinearLayout
+                        android:id="@+id/likeButtonContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/reaction_button_background"
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="12dp"
+                        android:layout_marginEnd="16dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:elevation="2dp">
+
+                        <ImageView
+                            android:id="@+id/likeIcon"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_thumb_up_outline"
+                            app:tint="#666666" />
+
+                        <TextView
+                            android:id="@+id/likeCountText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="0"
+                            android:textColor="#666666"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:minWidth="24dp"
+                            android:gravity="center" />
+
+                    </LinearLayout>
+
+                    <!-- Dislike Button Container -->
+                    <LinearLayout
+                        android:id="@+id/dislikeButtonContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/reaction_button_background"
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="12dp"
+                        android:layout_marginEnd="16dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:elevation="2dp">
+
+                        <ImageView
+                            android:id="@+id/dislikeIcon"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_thumb_down_outline"
+                            app:tint="#666666" />
+
+                        <TextView
+                            android:id="@+id/dislikeCountText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="0"
+                            android:textColor="#666666"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:minWidth="24dp"
+                            android:gravity="center" />
+
+                    </LinearLayout>
+
+                    <!-- View Reactions Button -->
+                    <LinearLayout
+                        android:id="@+id/viewReactionsContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/view_reactions_background"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="8dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:src="@drawable/ic_people"
+                            app:tint="#1db7ae"
+                            android:layout_marginEnd="4dp" />
+
+                        <TextView
+                            android:id="@+id/viewReactionsText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="View reactions"
+                            android:textColor="#1db7ae"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- Reaction Progress Bar -->
+                <LinearLayout
+                    android:id="@+id/reactionProgressContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginHorizontal="4dp"
+                    android:visibility="gone">
+
+                    <View
+                        android:id="@+id/likeProgressBar"
+                        android:layout_width="0dp"
+                        android:layout_height="6dp"
+                        android:layout_weight="0"
+                        android:background="@drawable/like_progress_background"
+                        android:layout_marginEnd="2dp" />
+
+                    <View
+                        android:id="@+id/dislikeProgressBar"
+                        android:layout_width="0dp"
+                        android:layout_height="6dp"
+                        android:layout_weight="0"
+                        android:background="@drawable/dislike_progress_background"
+                        android:layout_marginStart="2dp" />
+
+                </LinearLayout>
+
+                <!-- Reaction Summary Text -->
+                <TextView
+                    android:id="@+id/reactionSummaryText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text=""
+                    android:textColor="#888888"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
             <!-- Admin Action Buttons (Conditionally Visible) -->
             <LinearLayout
                 android:id="@+id/adminButtonsLayout"
@@ -142,7 +303,7 @@
                 android:gravity="end"
                 android:visibility="gone">
 
-                <!-- Update Button - Fixed with proper attributes -->
+                <!-- Update Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/updateEventButton"
                     style="@style/Widget.MaterialComponents.Button"
@@ -160,7 +321,7 @@
                     app:iconGravity="start"
                     app:iconTint="@android:color/white" />
 
-                <!-- Delete Button - Fixed with proper attributes -->
+                <!-- Delete Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/deleteEventButton"
                     style="@style/Widget.MaterialComponents.Button"

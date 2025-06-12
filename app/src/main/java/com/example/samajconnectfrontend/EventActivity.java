@@ -3,6 +3,8 @@ package com.example.samajconnectfrontend;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -10,11 +12,13 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
@@ -25,6 +29,7 @@ import com.android.volley.toolbox.Volley;
 import com.example.samajconnectfrontend.adapters.EventAdapter;
 import com.example.samajconnectfrontend.models.Event;
 import com.example.samajconnectfrontend.models.EventResponse;
+import com.example.samajconnectfrontend.models.ReactionStats;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 
@@ -40,18 +45,25 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
     private static final String TAG = "EventActivity";
     private static final String EVENT_URL = "http://10.0.2.2:8080/api/events/";
 
+    // UI Components
     private RecyclerView recyclerView;
+    private SwipeRefreshLayout swipeRefreshLayout;
     private FloatingActionButton fabAdd;
     private LinearLayout emptyStateLayout;
     private EventAdapter eventAdapter;
     private List<Event> eventList;
 
+    // Data and State
     private SharedPreferences sharedPrefs;
     private boolean isAdmin;
     private long currentUserId;
     private long currentSamajId;
     private RequestQueue requestQueue;
     private boolean isFirstLoad = true;
+    private boolean isLoadingEvents = false;
+
+    // Handler for UI updates
+    private Handler mainHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +79,7 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
                 return insets;
             });
 
-            initializeViews();
+            initializeComponents();
             setupSharedPreferences();
 
             // Check if we have valid user data before proceeding
@@ -78,11 +90,12 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
             }
 
             setupRecyclerView();
+            setupSwipeRefreshLayout();
             setupClickListeners();
 
-            // Show loading state initially
-            showLoadingState();
-            fetchEvents();
+            // Show initial loading state
+            showInitialLoadingState();
+            fetchEvents(false); // false = not a refresh
 
         } catch (Exception e) {
             Log.e(TAG, "Error in onCreate", e);
@@ -91,40 +104,28 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
         }
     }
 
-    private void initializeViews() {
+    private void initializeComponents() {
         try {
+            // Initialize UI components
             recyclerView = findViewById(R.id.recview);
+            swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
             fabAdd = findViewById(R.id.fadd);
             emptyStateLayout = findViewById(R.id.empty_state);
 
-            if (recyclerView == null || fabAdd == null || emptyStateLayout == null) {
+            if (recyclerView == null || swipeRefreshLayout == null || fabAdd == null || emptyStateLayout == null) {
                 throw new RuntimeException("One or more required views not found in layout");
             }
 
+            // Initialize data components
             requestQueue = Volley.newRequestQueue(this);
             eventList = new ArrayList<>();
+            mainHandler = new Handler(Looper.getMainLooper());
 
-            Log.d(TAG, "Views initialized successfully");
+            Log.d(TAG, "Components initialized successfully");
         } catch (Exception e) {
-            Log.e(TAG, "Error initializing views", e);
+            Log.e(TAG, "Error initializing components", e);
             throw e;
         }
-    }
-
-    private boolean validateUserData() {
-        if (currentUserId == -1L) {
-            Log.e(TAG, "Invalid user ID: " + currentUserId);
-            Toast.makeText(this, "User session invalid. Please login again.", Toast.LENGTH_LONG).show();
-            return false;
-        }
-
-        if (currentSamajId == -1L) {
-            Log.e(TAG, "Invalid samaj ID: " + currentSamajId);
-            Toast.makeText(this, "No samaj selected. Please select a samaj first.", Toast.LENGTH_LONG).show();
-            return false;
-        }
-
-        return true;
     }
 
     private void setupSharedPreferences() {
@@ -145,6 +146,22 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
         }
     }
 
+    private boolean validateUserData() {
+        if (currentUserId == -1L) {
+            Log.e(TAG, "Invalid user ID: " + currentUserId);
+            Toast.makeText(this, "User session invalid. Please login again.", Toast.LENGTH_LONG).show();
+            return false;
+        }
+
+        if (currentSamajId == -1L) {
+            Log.e(TAG, "Invalid samaj ID: " + currentSamajId);
+            Toast.makeText(this, "No samaj selected. Please select a samaj first.", Toast.LENGTH_LONG).show();
+            return false;
+        }
+
+        return true;
+    }
+
     private void setupRecyclerView() {
         try {
             LinearLayoutManager layoutManager = new LinearLayoutManager(this);
@@ -153,7 +170,7 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
             eventAdapter = new EventAdapter(this, eventList, isAdmin, this);
             recyclerView.setAdapter(eventAdapter);
 
-            // Add some debugging for RecyclerView
+            // Add scroll listener for debugging
             recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
                 @Override
                 public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
@@ -166,6 +183,37 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
         } catch (Exception e) {
             Log.e(TAG, "Error setting up RecyclerView", e);
             throw e;
+        }
+    }
+
+    private void setupSwipeRefreshLayout() {
+        try {
+            // Set the color scheme for the refresh indicator
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primary_color),
+                    ContextCompat.getColor(this, R.color.primary_dark),
+                    ContextCompat.getColor(this, R.color.accent_color)
+            );
+
+            // Set the background color
+            swipeRefreshLayout.setProgressBackgroundColorSchemeColor(
+                    ContextCompat.getColor(this, android.R.color.white)
+            );
+
+            // Set the refresh listener
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                Log.d(TAG, "SwipeRefreshLayout triggered");
+                refreshEvents();
+            });
+
+            // Set the size of the refresh indicator
+            swipeRefreshLayout.setSize(SwipeRefreshLayout.DEFAULT);
+
+            Log.d(TAG, "SwipeRefreshLayout setup completed");
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up SwipeRefreshLayout", e);
+            // Don't throw here, continue without swipe refresh
+            Log.w(TAG, "Continuing without SwipeRefreshLayout functionality");
         }
     }
 
@@ -189,22 +237,49 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
         });
     }
 
-    private void showLoadingState() {
+    private void showInitialLoadingState() {
         recyclerView.setVisibility(View.GONE);
         emptyStateLayout.setVisibility(View.GONE);
-        // You could add a loading indicator here if you have one
-        Log.d(TAG, "Showing loading state");
+        // The SwipeRefreshLayout will show its loading indicator
+        Log.d(TAG, "Showing initial loading state");
     }
 
-    private void fetchEvents() {
+    private void refreshEvents() {
+        Log.d(TAG, "Refreshing events via swipe");
+        if (!isLoadingEvents) {
+            fetchEvents(true); // true = this is a refresh
+        } else {
+            // If already loading, just stop the refresh indicator after a delay
+            mainHandler.postDelayed(() -> {
+                if (swipeRefreshLayout.isRefreshing()) {
+                    swipeRefreshLayout.setRefreshing(false);
+                }
+            }, 1000);
+        }
+    }
+
+    private void fetchEvents(boolean isRefresh) {
         if (currentSamajId == -1L) {
             Log.e(TAG, "Invalid Samaj ID");
+            handleFetchEventsComplete(isRefresh);
             showEmptyState();
             return;
         }
 
+        // Prevent multiple simultaneous requests
+        if (isLoadingEvents) {
+            Log.d(TAG, "Already loading events, skipping request");
+            return;
+        }
+
+        isLoadingEvents = true;
         String url = EVENT_URL + "samaj/" + currentSamajId;
-        Log.d(TAG, "Making API call to: " + url);
+        Log.d(TAG, "Making API call to: " + url + " (isRefresh: " + isRefresh + ")");
+
+        // Show refresh indicator if this is a refresh
+        if (isRefresh && !swipeRefreshLayout.isRefreshing()) {
+            swipeRefreshLayout.setRefreshing(true);
+        }
 
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.GET,
@@ -212,11 +287,11 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
                 null,
                 response -> {
                     Log.d(TAG, "API response received");
-                    handleEventsResponse(response);
+                    handleEventsResponse(response, isRefresh);
                 },
                 error -> {
                     Log.e(TAG, "API error occurred");
-                    handleEventsError(error);
+                    handleEventsError(error, isRefresh);
                 }
         ) {
             @Override
@@ -236,13 +311,18 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
             }
         };
 
-        // Increase timeout and reduce retries for debugging
-        request.setRetryPolicy(new DefaultRetryPolicy(30000, 0, 1.0f));
+        // Set timeout and retry policy
+        request.setRetryPolicy(new DefaultRetryPolicy(
+                30000, // 30 seconds timeout
+                0,     // No retries to avoid duplicate requests
+                1.0f   // Backoff multiplier
+        ));
+
         requestQueue.add(request);
         Log.d(TAG, "Request added to queue");
     }
 
-    private void handleEventsResponse(JSONObject response) {
+    private void handleEventsResponse(JSONObject response, boolean isRefresh) {
         try {
             Log.d(TAG, "Raw API response: " + response.toString());
 
@@ -257,33 +337,38 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
                 List<Event> newEvents = eventResponse.getEvents();
                 Log.d(TAG, "Number of events in response: " + newEvents.size());
 
-                // Clear and update the main list
+                // Update the main list
                 eventList.clear();
                 eventList.addAll(newEvents);
 
                 Log.d(TAG, "EventList updated, size: " + eventList.size());
 
-                // Always update the UI on the main thread
-                runOnUiThread(() -> {
-                    if (eventList.isEmpty()) {
-                        Log.d(TAG, "No events to display - showing empty state");
+                // Update UI on main thread
+                mainHandler.post(() -> {
+                    try {
+                        handleFetchEventsComplete(isRefresh);
+
+                        if (eventList.isEmpty()) {
+                            Log.d(TAG, "No events to display - showing empty state");
+                            showEmptyState();
+                        } else {
+                            Log.d(TAG, "Displaying " + eventList.size() + " events");
+                            hideEmptyState();
+
+                            // Update adapter with new data
+                            eventAdapter.updateEvents(new ArrayList<>(eventList));
+
+                            // Show success message for refresh
+                            if (isRefresh) {
+                                Toast.makeText(EventActivity.this, "Events refreshed successfully", Toast.LENGTH_SHORT).show();
+                            }
+
+                            Log.d(TAG, "UI update completed - Adapter item count: " + eventAdapter.getItemCount());
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error updating UI after successful response", e);
+                        handleFetchEventsComplete(isRefresh);
                         showEmptyState();
-                    } else {
-                        Log.d(TAG, "Displaying " + eventList.size() + " events");
-                        hideEmptyState();
-
-                        // Update adapter with new data
-                        eventAdapter.updateEvents(new ArrayList<>(eventList));
-
-                        // Force RecyclerView to refresh
-                        recyclerView.post(() -> {
-                            eventAdapter.notifyDataSetChanged();
-                            Log.d(TAG, "RecyclerView refresh completed");
-
-                            // Additional debugging
-                            Log.d(TAG, "Adapter item count: " + eventAdapter.getItemCount());
-                            Log.d(TAG, "RecyclerView child count: " + recyclerView.getChildCount());
-                        });
                     }
                 });
 
@@ -291,50 +376,90 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
 
             } else {
                 Log.w(TAG, "No events found or API call failed");
-                runOnUiThread(() -> {
+                mainHandler.post(() -> {
+                    handleFetchEventsComplete(isRefresh);
                     showEmptyState();
-                    Toast.makeText(this, "No events found", Toast.LENGTH_SHORT).show();
+                    if (isRefresh) {
+                        Toast.makeText(EventActivity.this, "No events found", Toast.LENGTH_SHORT).show();
+                    }
                 });
             }
 
         } catch (Exception e) {
             Log.e(TAG, "Error parsing events response", e);
-            runOnUiThread(() -> {
-                Toast.makeText(this, "Error loading events: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            mainHandler.post(() -> {
+                handleFetchEventsComplete(isRefresh);
+                Toast.makeText(EventActivity.this, "Error loading events: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 showEmptyState();
             });
         }
     }
 
-    private void handleEventsError(com.android.volley.VolleyError error) {
+    // Fixed version of handleEventsError method in EventActivity.java
+
+    private void handleEventsError(com.android.volley.VolleyError error, boolean isRefresh) {
         Log.e(TAG, "Error loading events: " + error.toString());
 
-        String errorMessage = "Failed to load events";
+        String errorMessage;
         if (error.networkResponse != null) {
             int statusCode = error.networkResponse.statusCode;
             Log.e(TAG, "Status Code: " + statusCode);
-            Log.e(TAG, "Response Data: " + new String(error.networkResponse.data));
 
-            if (statusCode == 401) {
-                errorMessage = "Unauthorized - Please login again";
+            try {
+                String responseData = new String(error.networkResponse.data);
+                Log.e(TAG, "Response Data: " + responseData);
+            } catch (Exception e) {
+                Log.e(TAG, "Could not parse error response data");
+            }
+
+            if (statusCode == 401 || statusCode == 403) {
+                errorMessage = "Session expired - Please login again";
                 // Clear invalid auth data
                 SharedPreferences.Editor editor = sharedPrefs.edit();
                 editor.remove("auth_token");
+                editor.remove("user_id");
+                editor.remove("samaj_id");
                 editor.apply();
+
+                // Optionally redirect to login
+                // Intent loginIntent = new Intent(this, LoginActivity.class);
+                // loginIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                // startActivity(loginIntent);
+                // finish();
+
             } else if (statusCode == 404) {
                 errorMessage = "No events found for this samaj";
             } else if (statusCode >= 500) {
                 errorMessage = "Server error - Please try again later";
+            } else {
+                errorMessage = "Failed to load events";
             }
         } else {
             errorMessage = "Network error - Check your connection";
             Log.e(TAG, "Network error details: " + error.getMessage());
         }
 
-        runOnUiThread(() -> {
-           // Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+        mainHandler.post(() -> {
+            handleFetchEventsComplete(isRefresh);
+
+            if (isRefresh) {
+                // FIXED: Use the actual error message instead of "FNRJF"
+                Toast.makeText(EventActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+            }
+
             showEmptyState();
         });
+    }
+
+    private void handleFetchEventsComplete(boolean isRefresh) {
+        isLoadingEvents = false;
+
+        // Stop refresh indicator if this was a refresh
+        if (isRefresh && swipeRefreshLayout.isRefreshing()) {
+            swipeRefreshLayout.setRefreshing(false);
+        }
+
+        Log.d(TAG, "Fetch events completed (isRefresh: " + isRefresh + ")");
     }
 
     private void showEmptyState() {
@@ -379,6 +504,21 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
                 .show();
     }
 
+    @Override
+    public void onViewReactions(Event event, ReactionStats stats) {
+        // Handle view reactions - you can implement a reactions viewing activity here
+        String message = "Event: " + event.getEventTitle() + "\n" +
+                "Likes: " + stats.getLikeCount() + "\n" +
+                "Dislikes: " + stats.getDislikeCount() + "\n" +
+                "Total: " + stats.getTotalReactions();
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Event Reactions")
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .show();
+    }
+
     private void deleteEvent(Event event) {
         String url = EVENT_URL + event.getIdAsLong();
         Log.d(TAG, "Deleting event with URL: " + url);
@@ -388,9 +528,9 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
                 url,
                 response -> {
                     Log.d(TAG, "Event deleted successfully: " + response);
-                    runOnUiThread(() -> {
+                    mainHandler.post(() -> {
                         Toast.makeText(EventActivity.this, "Event deleted successfully", Toast.LENGTH_SHORT).show();
-                        fetchEvents(); // Refresh the list
+                        fetchEvents(false); // Refresh the list
                     });
                 },
                 error -> {
@@ -398,9 +538,13 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
                     String errorMessage = "Failed to delete event";
                     if (error.networkResponse != null) {
                         Log.e(TAG, "Delete error status code: " + error.networkResponse.statusCode);
-                        Log.e(TAG, "Delete error response: " + new String(error.networkResponse.data));
+                        try {
+                            Log.e(TAG, "Delete error response: " + new String(error.networkResponse.data));
+                        } catch (Exception e) {
+                            Log.e(TAG, "Could not parse delete error response");
+                        }
                     }
-                    runOnUiThread(() -> {
+                    mainHandler.post(() -> {
                         Toast.makeText(EventActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
                     });
                 }
@@ -431,10 +575,10 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
         if (resultCode == RESULT_OK) {
             if (requestCode == 1001) { // Create event result
                 Toast.makeText(this, "Event created successfully", Toast.LENGTH_SHORT).show();
-                fetchEvents(); // Refresh the list
+                fetchEvents(false); // Refresh the list
             } else if (requestCode == 1002) { // Update event result
                 Toast.makeText(this, "Event updated successfully", Toast.LENGTH_SHORT).show();
-                fetchEvents(); // Refresh the list
+                fetchEvents(false); // Refresh the list
             }
         }
     }
@@ -445,9 +589,9 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
         Log.d(TAG, "onResume called - isFirstLoad: " + isFirstLoad);
 
         // Only refresh if not the first load and we have valid data
-        if (!isFirstLoad && validateUserData()) {
+        if (!isFirstLoad && validateUserData() && !isLoadingEvents) {
             Log.d(TAG, "onResume - Refreshing events");
-            fetchEvents();
+            fetchEvents(false);
         }
         isFirstLoad = false;
     }
@@ -456,14 +600,31 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
     protected void onPause() {
         super.onPause();
         Log.d(TAG, "onPause called");
+
+        // Stop any ongoing refresh
+        if (swipeRefreshLayout.isRefreshing()) {
+            swipeRefreshLayout.setRefreshing(false);
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "onDestroy called");
+
+        // Cancel all pending requests
         if (requestQueue != null) {
             requestQueue.cancelAll(TAG);
+        }
+
+        // Clean up handler
+        if (mainHandler != null) {
+            mainHandler.removeCallbacksAndMessages(null);
+        }
+
+        // Stop refresh indicator
+        if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+            swipeRefreshLayout.setRefreshing(false);
         }
     }
 
@@ -471,5 +632,13 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
     public void onBackPressed() {
         Log.d(TAG, "onBackPressed called");
         super.onBackPressed();
+    }
+
+    // Public method to trigger refresh (can be called from other components)
+    public void triggerRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setRefreshing(true);
+            refreshEvents();
+        }
     }
 }

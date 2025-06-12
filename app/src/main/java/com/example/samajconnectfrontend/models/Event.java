@@ -26,7 +26,20 @@ public class Event {
     @SerializedName("imageBase64")
     private String imageBase64;
 
-    // Additional fields from your existing functionality
+    // New fields from backend
+    @SerializedName("updatedAt")
+    private String updatedAt;
+
+    @SerializedName("likeCount")
+    private Integer likeCount = 0;
+
+    @SerializedName("dislikeCount")
+    private Integer dislikeCount = 0;
+
+    @SerializedName("currentUserReaction")
+    private ReactionType currentUserReaction;
+
+    // Additional fields from existing functionality
     private String title;
     private String description;
     private String location;
@@ -53,6 +66,8 @@ public class Event {
         this.location = location;
         this.eventTime = eventTime;
         this.imageUrl = imageUrl;
+        this.likeCount = 0;
+        this.dislikeCount = 0;
     }
 
     // Getters and Setters for API fields
@@ -85,6 +100,21 @@ public class Event {
 
     public String getImageBase64() { return imageBase64; }
     public void setImageBase64(String imageBase64) { this.imageBase64 = imageBase64; }
+
+    // New getters and setters for added fields
+    public String getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
+
+    public Integer getLikeCount() { return likeCount != null ? likeCount : 0; }
+    public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
+
+    public Integer getDislikeCount() { return dislikeCount != null ? dislikeCount : 0; }
+    public void setDislikeCount(Integer dislikeCount) { this.dislikeCount = dislikeCount; }
+
+    public ReactionType getCurrentUserReaction() { return currentUserReaction; }
+    public void setCurrentUserReaction(ReactionType currentUserReaction) {
+        this.currentUserReaction = currentUserReaction;
+    }
 
     // Getters and Setters for existing functionality fields
     public String getTitle() {
@@ -135,6 +165,41 @@ public class Event {
         }
     }
 
+    // New helper methods for reaction functionality
+    public boolean isLikedByCurrentUser() {
+        return currentUserReaction == ReactionType.LIKE;
+    }
+
+    public boolean isDislikedByCurrentUser() {
+        return currentUserReaction == ReactionType.DISLIKE;
+    }
+
+    public int getTotalReactions() {
+        return getLikeCount() + getDislikeCount();
+    }
+
+    public double getLikeRatio() {
+        int total = getTotalReactions();
+        return total > 0 ? (double) getLikeCount() / total : 0.0;
+    }
+
+    // Methods for optimistic updates
+    public void incrementLikeCount() {
+        this.likeCount = getLikeCount() + 1;
+    }
+
+    public void decrementLikeCount() {
+        this.likeCount = Math.max(0, getLikeCount() - 1);
+    }
+
+    public void incrementDislikeCount() {
+        this.dislikeCount = getDislikeCount() + 1;
+    }
+
+    public void decrementDislikeCount() {
+        this.dislikeCount = Math.max(0, getDislikeCount() - 1);
+    }
+
     @Override
     public String toString() {
         return "Event{" +
@@ -146,11 +211,28 @@ public class Event {
                 ", createdBy=" + createdBy +
                 ", samajId=" + samajId +
                 ", imageBase64='" + (imageBase64 != null ? "[BASE64_DATA]" : null) + '\'' +
+                ", updatedAt='" + updatedAt + '\'' +
+                ", likeCount=" + likeCount +
+                ", dislikeCount=" + dislikeCount +
+                ", currentUserReaction=" + currentUserReaction +
                 ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
                 ", location='" + location + '\'' +
                 ", eventTime='" + eventTime + '\'' +
                 ", imageUrl='" + imageUrl + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Event event = (Event) o;
+        return id != null && id.equals(event.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
     }
 }

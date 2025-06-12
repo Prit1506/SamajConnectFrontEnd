@@ -16,6 +16,9 @@
     <color name="colorPrimaryVariant">#00a693</color>
     <color name="colorSecondary">#ff6b6b</color>
     <color name="colorSecondaryVariant">#ff5252</color>
+    <color name="primary_color">#2196F3</color>
+    <color name="primary_dark">#1976D2</color>
+    <color name="primary_light">#BBDEFB</color>
 
     <!-- Text Colors -->
     <color name="colorOnPrimary">#FFFFFF</color>
@@ -36,4 +39,55 @@
     <color name="event_description_color">#555555</color>
     <color name="event_date_color">#1db7ae</color>
     <color name="event_location_color">#ff6b6b</color>
+
+    <!-- Accent Colors -->
+    <color name="accent_color">#FF5722</color>
+
+    <!-- Text Colors -->
+    <color name="primary_text_color">#212121</color>
+    <color name="secondary_text_color">#757575</color>
+    <color name="tertiary_text_color">#9E9E9E</color>
+    <color name="default_text_color">#424242</color>
+
+    <!-- Background Colors -->
+    <color name="light_gray">#E0E0E0</color>
+    <color name="medium_gray">#BDBDBD</color>
+    <color name="dark_gray">#616161</color>
+    <color name="button_background">#F5F5F5</color>
+    <color name="image_placeholder">#F0F0F0</color>
+
+    <!-- Icon Colors -->
+    <color name="default_icon_color">#757575</color>
+    <color name="icon_tint_color">#9E9E9E</color>
+
+    <!-- Reaction Colors -->
+    <color name="like_active_color">#4CAF50</color>
+    <color name="like_inactive_color">#C8E6C9</color>
+    <color name="dislike_active_color">#F44336</color>
+    <color name="dislike_inactive_color">#FFCDD2</color>
+
+    <!-- Error Colors -->
+    <color name="error_color">#F44336</color>
+    <color name="error_background">#FFEBEE</color>
+
+    <!-- Transparent -->
+    <color name="transparent">#00000000</color>
+    <color name="semi_transparent">#80000000</color>
+
+    <!-- Material Design Colors -->
+    <color name="blue_500">#2196F3</color>
+    <color name="blue_700">#1976D2</color>
+    <color name="green_500">#4CAF50</color>
+    <color name="green_700">#388E3C</color>
+    <color name="red_500">#F44336</color>
+    <color name="red_700">#D32F2F</color>
+    <color name="orange_500">#FF9800</color>
+    <color name="orange_700">#F57C00</color>
+
+    <!-- Card Colors -->
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_stroke">#E0E0E0</color>
+
+    <!-- Ripple Effect -->
+    <color name="ripple_color">#1F000000</color>
 </resources>
