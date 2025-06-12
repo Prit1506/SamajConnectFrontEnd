@@ -244,9 +244,9 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             isLoadingReaction = true;
             updateReactionButtonsLoadingState(true);
 
+            boolean isTogglingSame;
             // Check if user is toggling the same reaction (remove) or changing reaction
-            boolean isTogglingSame = currentStats != null && currentStats.hasUserReacted() &&
-                    currentStats.getUserReaction().getReactionType().equals(reactionType.name());
+            isTogglingSame = currentStats != null && currentStats.getUserReaction().equalsIgnoreCase(reactionType.name());
 
             String url = REACTION_BASE_URL + event.getIdAsLong() + "/reactions";
 
@@ -428,30 +428,22 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         }
 
         private void updateReactionButtonStates() {
-            // Reset all icons to default state
-            likeIcon.setImageResource(R.drawable.ic_thumb_up_outline);
-            dislikeIcon.setImageResource(R.drawable.ic_thumb_down_outline);
-
-            int defaultColor = ContextCompat.getColor(context, R.color.default_icon_color);
-            int likeColor = ContextCompat.getColor(context, R.color.like_active_color);
-            int dislikeColor = ContextCompat.getColor(context, R.color.dislike_active_color);
-
-            // Apply tint using ImageViewCompat
-            ImageViewCompat.setImageTintList(likeIcon, ColorStateList.valueOf(defaultColor));
-            ImageViewCompat.setImageTintList(dislikeIcon, ColorStateList.valueOf(defaultColor));
-            likeCountText.setTextColor(defaultColor);
-            dislikeCountText.setTextColor(defaultColor);
-
             if (currentStats != null && currentStats.hasUserReacted()) {
+
                 if (currentStats.hasUserLiked()) {
+                    // Set filled icon for like, outline for dislike
                     likeIcon.setImageResource(R.drawable.ic_thumb_up_filled);
-                    ImageViewCompat.setImageTintList(likeIcon, ColorStateList.valueOf(likeColor));
-                    likeCountText.setTextColor(likeColor);
+                    dislikeIcon.setImageResource(R.drawable.ic_thumb_down_outline);
+
                 } else if (currentStats.hasUserDisliked()) {
+                    // Set filled icon for dislike, outline for like
                     dislikeIcon.setImageResource(R.drawable.ic_thumb_down_filled);
-                    ImageViewCompat.setImageTintList(dislikeIcon, ColorStateList.valueOf(dislikeColor));
-                    dislikeCountText.setTextColor(dislikeColor);
+                    likeIcon.setImageResource(R.drawable.ic_thumb_up_outline);
                 }
+            } else {
+                 // Reset both to outline state
+                likeIcon.setImageResource(R.drawable.ic_thumb_up_outline);
+                dislikeIcon.setImageResource(R.drawable.ic_thumb_down_outline);
             }
         }
 

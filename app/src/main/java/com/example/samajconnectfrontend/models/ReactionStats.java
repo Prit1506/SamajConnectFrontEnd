@@ -47,8 +47,8 @@ public class ReactionStats {
         this.totalReactions = totalReactions;
     }
 
-    public EventReaction getUserReaction() {
-        return userReaction;
+    public String getUserReaction() {
+        return likeCount>=1?"LIKE":"DISLIKE";
     }
 
     public void setUserReaction(EventReaction userReaction) {
@@ -83,15 +83,15 @@ public class ReactionStats {
     }
 
     public boolean hasUserReacted() {
-        return userReaction != null;
+        return likeCount >= 1 || dislikeCount >= 1;
     }
 
     public boolean hasUserLiked() {
-        return userReaction != null && userReaction.isLike();
+        return likeCount >= 1;
     }
 
     public boolean hasUserDisliked() {
-        return userReaction != null && userReaction.isDislike();
+        return dislikeCount >= 1;
     }
 
     public String getReactionSummary() {

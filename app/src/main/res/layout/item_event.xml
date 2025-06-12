@@ -165,10 +165,10 @@
 
                         <ImageView
                             android:id="@+id/likeIcon"
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
                             android:src="@drawable/ic_thumb_up_outline"
-                            app:tint="#666666" />
+                            android:layout_gravity="center" />
 
                         <TextView
                             android:id="@+id/likeCountText"
@@ -201,10 +201,10 @@
 
                         <ImageView
                             android:id="@+id/dislikeIcon"
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:src="@drawable/ic_thumb_down_outline"
-                            app:tint="#666666" />
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_thumb_down_outline" />
 
                         <TextView
                             android:id="@+id/dislikeCountText"
