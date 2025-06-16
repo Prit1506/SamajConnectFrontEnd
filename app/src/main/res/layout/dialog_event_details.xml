@@ -33,8 +33,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="top"
                 android:orientation="horizontal"
-                android:padding="16dp"
-                android:background="@drawable/gradient_overlay_top">
+                android:padding="16dp">
 
                 <ImageView
                     android:id="@+id/closeButton"
