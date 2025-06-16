@@ -229,7 +229,7 @@ public class EventSliderAdapter extends RecyclerView.Adapter<EventSliderAdapter.
                 // Change to "filled" alarm icon or different color
                 ImageView reminderIcon = reminderButtonContainer.findViewById(R.id.reminderIcon);
                 if (reminderIcon != null) {
-                    reminderIcon.setImageResource(R.drawable.ic_alarm_on); // You'll need this drawable
+                    reminderIcon.setImageResource(R.drawable.ic_alarm); // You'll need this drawable
                     // Or change tint color
                     // ImageViewCompat.setImageTintList(reminderIcon,
                     //     ColorStateList.valueOf(ContextCompat.getColor(context, R.color.reminder_active_color)));

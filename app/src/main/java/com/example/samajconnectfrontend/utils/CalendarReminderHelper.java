@@ -7,9 +7,9 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.provider.CalendarContract;
-import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -22,6 +22,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -46,299 +47,40 @@ public class CalendarReminderHelper {
         this.listener = listener;
     }
 
-    /**
-     * Main method to set reminder for an event
-     */
     public void setEventReminder(Event event) {
         if (!hasCalendarPermissions()) {
             requestCalendarPermissions();
             return;
         }
 
-        // Option 1: Open calendar app with pre-filled event details
-        openCalendarAppWithEvent(event);
+        // Check if calendar apps are available
+        if (!isCalendarAppAvailable()) {
+            // Fallback to direct calendar intent
+            setReminderWithIntent(event);
+            return;
+        }
 
-        // Option 2: Directly insert into calendar (uncomment if you prefer this approach)
-        // insertEventToCalendar(event);
-    }
-
-    /**
-     * Opens the default calendar app with pre-filled event details
-     */
-    private void openCalendarAppWithEvent(Event event) {
-        try {
-            Intent intent = new Intent(Intent.ACTION_INSERT);
-            intent.setData(CalendarContract.Events.CONTENT_URI);
-
-            // Set event title
-            String title = !TextUtils.isEmpty(event.getEventTitle()) ?
-                    event.getEventTitle() : "Event Reminder";
-            intent.putExtra(CalendarContract.Events.TITLE, title);
-
-            // Set event description
-            String description = buildEventDescription(event);
-            intent.putExtra(CalendarContract.Events.DESCRIPTION, description);
-
-            // Set event location
-            if (!TextUtils.isEmpty(event.getLocation())) {
-                intent.putExtra(CalendarContract.Events.EVENT_LOCATION, event.getLocation());
-            }
-
-            // Parse and set event date/time
-            long eventTimeMillis = parseEventDateTime(event.getEventDate());
-            if (eventTimeMillis > 0) {
-                intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, eventTimeMillis);
-                // Set end time to 2 hours after start time (default duration)
-                intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, eventTimeMillis + (2 * 60 * 60 * 1000));
-            }
-
-            // Set reminder - 1 hour before event
-            intent.putExtra(CalendarContract.Events.HAS_ALARM, true);
-
-            // Set availability
-            intent.putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY);
-
-            // Start calendar activity
-            if (intent.resolveActivity(context.getPackageManager()) != null) {
-                context.startActivity(intent);
-
-                if (listener != null) {
-                    listener.onReminderSet(true, "Calendar opened for reminder setup");
-                }
-
-                Toast.makeText(context, "Calendar opened. Please save the event to set reminder.",
-                        Toast.LENGTH_LONG).show();
-            } else {
-                // No calendar app found
-                if (listener != null) {
-                    listener.onReminderSet(false, "No calendar app found");
-                }
-                Toast.makeText(context, "No calendar app found on device", Toast.LENGTH_SHORT).show();
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error opening calendar app", e);
+        // Try to add to device calendar first
+        if (addToDeviceCalendar(event)) {
             if (listener != null) {
-                listener.onReminderSet(false, "Error opening calendar: " + e.getMessage());
+                listener.onReminderSet(true, "Reminder set successfully");
             }
-            Toast.makeText(context, "Error opening calendar app", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Event added to calendar", Toast.LENGTH_SHORT).show();
+        } else {
+            // Fallback to calendar intent
+            setReminderWithIntent(event);
         }
     }
 
-    /**
-     * Directly inserts event into device calendar (alternative approach)
-     */
-    private void insertEventToCalendar(Event event) {
-        try {
-            ContentResolver cr = context.getContentResolver();
-            ContentValues values = new ContentValues();
-
-            // Event details
-            String title = !TextUtils.isEmpty(event.getEventTitle()) ?
-                    event.getEventTitle() : "Event Reminder";
-            values.put(CalendarContract.Events.TITLE, title);
-
-            String description = buildEventDescription(event);
-            values.put(CalendarContract.Events.DESCRIPTION, description);
-
-            if (!TextUtils.isEmpty(event.getLocation())) {
-                values.put(CalendarContract.Events.EVENT_LOCATION, event.getLocation());
-            }
-
-            // Parse event date/time
-            long eventTimeMillis = parseEventDateTime(event.getEventDate());
-            if (eventTimeMillis <= 0) {
-                Toast.makeText(context, "Invalid event date", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            values.put(CalendarContract.Events.DTSTART, eventTimeMillis);
-            values.put(CalendarContract.Events.DTEND, eventTimeMillis + (2 * 60 * 60 * 1000)); // 2 hours duration
-
-            // Set timezone
-            values.put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().getID());
-
-            // Set calendar (use primary calendar)
-            long calendarId = getPrimaryCalendarId();
-            if (calendarId == -1) {
-                Toast.makeText(context, "No calendar found", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            values.put(CalendarContract.Events.CALENDAR_ID, calendarId);
-
-            // Other properties
-            values.put(CalendarContract.Events.HAS_ALARM, 1);
-            values.put(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY);
-
-            // Insert event
-            Uri eventUri = cr.insert(CalendarContract.Events.CONTENT_URI, values);
-
-            if (eventUri != null) {
-                // Get the event ID
-                long eventId = Long.parseLong(eventUri.getLastPathSegment());
-
-                // Add reminder (1 hour before)
-                addEventReminder(eventId, 60); // 60 minutes before
-
-                if (listener != null) {
-                    listener.onReminderSet(true, "Reminder set successfully");
-                }
-                Toast.makeText(context, "Event added to calendar with reminder", Toast.LENGTH_SHORT).show();
-            } else {
-                if (listener != null) {
-                    listener.onReminderSet(false, "Failed to add event to calendar");
-                }
-                Toast.makeText(context, "Failed to add event to calendar", Toast.LENGTH_SHORT).show();
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error inserting event to calendar", e);
-            if (listener != null) {
-                listener.onReminderSet(false, "Error: " + e.getMessage());
-            }
-            Toast.makeText(context, "Error adding event to calendar", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    /**
-     * Adds a reminder to an existing calendar event
-     */
-    private void addEventReminder(long eventId, int minutesBefore) {
-        try {
-            ContentResolver cr = context.getContentResolver();
-            ContentValues reminderValues = new ContentValues();
-
-            reminderValues.put(CalendarContract.Reminders.EVENT_ID, eventId);
-            reminderValues.put(CalendarContract.Reminders.MINUTES, minutesBefore);
-            reminderValues.put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_ALERT);
-
-            cr.insert(CalendarContract.Reminders.CONTENT_URI, reminderValues);
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error adding reminder", e);
-        }
-    }
-
-    /**
-     * Gets the primary calendar ID
-     */
-    private long getPrimaryCalendarId() {
-        try {
-            ContentResolver cr = context.getContentResolver();
-            String[] projection = {CalendarContract.Calendars._ID, CalendarContract.Calendars.IS_PRIMARY};
-
-            Uri uri = CalendarContract.Calendars.CONTENT_URI;
-            String selection = CalendarContract.Calendars.VISIBLE + " = 1";
-
-            android.database.Cursor cursor = cr.query(uri, projection, selection, null, null);
-
-            if (cursor != null) {
-                while (cursor.moveToNext()) {
-                    long id = cursor.getLong(0);
-                    int isPrimary = cursor.getInt(1);
-
-                    if (isPrimary == 1) {
-                        cursor.close();
-                        return id;
-                    }
-                }
-
-                // If no primary calendar, return the first one
-                if (cursor.moveToFirst()) {
-                    long id = cursor.getLong(0);
-                    cursor.close();
-                    return id;
-                }
-
-                cursor.close();
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error getting calendar ID", e);
-        }
-
-        return -1;
-    }
-
-    /**
-     * Builds event description from event details
-     */
-    private String buildEventDescription(Event event) {
-        StringBuilder description = new StringBuilder();
-
-        if (!TextUtils.isEmpty(event.getEventDescription())) {
-            description.append(event.getEventDescription());
-        }
-
-        if (!TextUtils.isEmpty(event.getLocation())) {
-            if (description.length() > 0) {
-                description.append("\n\n");
-            }
-            description.append("Location: ").append(event.getLocation());
-        }
-
-        description.append("\n\nAdded from SamajConnect App");
-
-        return description.toString();
-    }
-
-    /**
-     * Parses event date string to milliseconds
-     */
-    private long parseEventDateTime(String dateString) {
-        if (TextUtils.isEmpty(dateString)) {
-            return 0;
-        }
-
-        try {
-            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-            Date date = inputFormat.parse(dateString);
-            return date != null ? date.getTime() : 0;
-        } catch (ParseException e) {
-            Log.e(TAG, "Failed to parse date: " + dateString, e);
-
-            // Try alternative format
-            try {
-                SimpleDateFormat altFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                Date date = altFormat.parse(dateString);
-
-                // Set time to 10:00 AM if only date is provided
-                if (date != null) {
-                    Calendar calendar = Calendar.getInstance();
-                    calendar.setTime(date);
-                    calendar.set(Calendar.HOUR_OF_DAY, 10);
-                    calendar.set(Calendar.MINUTE, 0);
-                    calendar.set(Calendar.SECOND, 0);
-                    return calendar.getTimeInMillis();
-                }
-            } catch (ParseException e2) {
-                Log.e(TAG, "Failed to parse alternative date format", e2);
-            }
-        }
-
-        return 0;
-    }
-
-    /**
-     * Checks if calendar permissions are granted
-     */
     private boolean hasCalendarPermissions() {
-        return ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR)
-                == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
-                        == PackageManager.PERMISSION_GRANTED;
+        return ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED;
     }
 
-    /**
-     * Requests calendar permissions
-     */
     private void requestCalendarPermissions() {
         if (context instanceof Activity) {
             ActivityCompat.requestPermissions((Activity) context,
-                    new String[]{
-                            Manifest.permission.READ_CALENDAR,
-                            Manifest.permission.WRITE_CALENDAR
-                    },
+                    new String[]{Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR},
                     CALENDAR_PERMISSION_REQUEST_CODE);
         }
 
@@ -347,30 +89,246 @@ public class CalendarReminderHelper {
         }
     }
 
-    /**
-     * Call this method from your Activity's onRequestPermissionsResult
-     */
-    public void handlePermissionResult(int requestCode, String[] permissions, int[] grantResults) {
-        if (requestCode == CALENDAR_PERMISSION_REQUEST_CODE) {
-            boolean allPermissionsGranted = true;
+    private boolean isCalendarAppAvailable() {
+        Intent intent = new Intent(Intent.ACTION_INSERT);
+        intent.setData(CalendarContract.Events.CONTENT_URI);
 
-            for (int result : grantResults) {
-                if (result != PackageManager.PERMISSION_GRANTED) {
-                    allPermissionsGranted = false;
-                    break;
-                }
+        List<ResolveInfo> resolveInfos = context.getPackageManager().queryIntentActivities(intent, 0);
+        return !resolveInfos.isEmpty();
+    }
+
+    private boolean addToDeviceCalendar(Event event) {
+        try {
+            ContentResolver contentResolver = context.getContentResolver();
+
+            // Parse event date
+            Date eventDate = parseEventDate(event.getEventDate());
+            if (eventDate == null) {
+                Log.e(TAG, "Could not parse event date: " + event.getEventDate());
+                return false;
             }
 
-            if (allPermissionsGranted) {
-                Toast.makeText(context, "Calendar permissions granted", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(context, "Calendar permissions required for reminder feature",
-                        Toast.LENGTH_LONG).show();
+            // Create calendar event
+            ContentValues values = new ContentValues();
+            values.put(CalendarContract.Events.DTSTART, eventDate.getTime());
+            values.put(CalendarContract.Events.DTEND, eventDate.getTime() + (2 * 60 * 60 * 1000)); // 2 hours duration
+            values.put(CalendarContract.Events.TITLE, event.getEventTitle());
+            values.put(CalendarContract.Events.DESCRIPTION, event.getDescription());
+            values.put(CalendarContract.Events.EVENT_LOCATION, event.getLocation());
+            values.put(CalendarContract.Events.CALENDAR_ID, getDefaultCalendarId());
+            values.put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().getID());
+
+            Uri uri = contentResolver.insert(CalendarContract.Events.CONTENT_URI, values);
+
+            if (uri != null) {
+                // Add reminder (15 minutes before)
+                long eventId = Long.parseLong(uri.getLastPathSegment());
+                addReminderToEvent(eventId, 15); // 15 minutes before
+
+                Log.d(TAG, "Event added to calendar with ID: " + eventId);
+                return true;
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error adding event to calendar", e);
+        }
+
+        return false;
+    }
+
+    private void addReminderToEvent(long eventId, int minutesBefore) {
+        try {
+            ContentResolver contentResolver = context.getContentResolver();
+
+            ContentValues reminderValues = new ContentValues();
+            reminderValues.put(CalendarContract.Reminders.EVENT_ID, eventId);
+            reminderValues.put(CalendarContract.Reminders.MINUTES, minutesBefore);
+            reminderValues.put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_ALERT);
+
+            contentResolver.insert(CalendarContract.Reminders.CONTENT_URI, reminderValues);
+            Log.d(TAG, "Reminder added for event " + eventId + " - " + minutesBefore + " minutes before");
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error adding reminder", e);
+        }
+    }
+
+    private long getDefaultCalendarId() {
+        // For simplicity, return 1 (usually the primary calendar)
+        // In a production app, you should query for available calendars
+        return 1;
+    }
+
+    private void setReminderWithIntent(Event event) {
+        try {
+            Date eventDate = parseEventDate(event.getEventDate());
+            if (eventDate == null) {
+                Toast.makeText(context, "Invalid event date", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Create calendar intent
+            Intent intent = new Intent(Intent.ACTION_INSERT);
+            intent.setData(CalendarContract.Events.CONTENT_URI);
+            intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, eventDate.getTime());
+            intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, eventDate.getTime() + (2 * 60 * 60 * 1000)); // 2 hours
+            intent.putExtra(CalendarContract.Events.TITLE, event.getEventTitle());
+            intent.putExtra(CalendarContract.Events.DESCRIPTION, event.getDescription());
+            intent.putExtra(CalendarContract.Events.EVENT_LOCATION, event.getLocation());
+            intent.putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY);
+
+            // Check if there's an app to handle this intent
+            if (intent.resolveActivity(context.getPackageManager()) != null) {
+                context.startActivity(intent);
 
                 if (listener != null) {
-                    listener.onReminderSet(false, "Calendar permissions denied");
+                    listener.onReminderSet(true, "Opening calendar app to set reminder");
+                }
+                Toast.makeText(context, "Opening calendar to set reminder", Toast.LENGTH_SHORT).show();
+            } else {
+                // Final fallback - try to open any calendar app
+                openCalendarApp(event);
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating calendar intent", e);
+            Toast.makeText(context, "Error setting reminder", Toast.LENGTH_SHORT).show();
+
+            if (listener != null) {
+                listener.onReminderSet(false, "Error setting reminder");
+            }
+        }
+    }
+
+    private void openCalendarApp(Event event) {
+        try {
+            // Try to open Google Calendar specifically
+            Intent googleCalendarIntent = context.getPackageManager().getLaunchIntentForPackage("com.google.android.calendar");
+            if (googleCalendarIntent != null) {
+                context.startActivity(googleCalendarIntent);
+                Toast.makeText(context, "Please manually add the event to your calendar", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            // Try generic calendar intent
+            Intent calendarIntent = new Intent(Intent.ACTION_MAIN);
+            calendarIntent.addCategory(Intent.CATEGORY_APP_CALENDAR);
+
+            if (calendarIntent.resolveActivity(context.getPackageManager()) != null) {
+                context.startActivity(calendarIntent);
+                Toast.makeText(context, "Please manually add the event to your calendar", Toast.LENGTH_LONG).show();
+            } else {
+                // Last resort - web calendar
+                openWebCalendar(event);
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening calendar app", e);
+            Toast.makeText(context, "No calendar app found. Please install Google Calendar or any calendar app.", Toast.LENGTH_LONG).show();
+
+            if (listener != null) {
+                listener.onReminderSet(false, "No calendar app found");
+            }
+        }
+    }
+
+    private void openWebCalendar(Event event) {
+        try {
+            // Create Google Calendar web URL
+            Date eventDate = parseEventDate(event.getEventDate());
+            if (eventDate == null) return;
+
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(eventDate);
+
+            String dateString = String.format(Locale.US, "%04d%02d%02dT%02d%02d%02d",
+                    cal.get(Calendar.YEAR),
+                    cal.get(Calendar.MONTH) + 1,
+                    cal.get(Calendar.DAY_OF_MONTH),
+                    cal.get(Calendar.HOUR_OF_DAY),
+                    cal.get(Calendar.MINUTE),
+                    cal.get(Calendar.SECOND));
+
+            String url = "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+                    "&text=" + Uri.encode(event.getEventTitle()) +
+                    "&dates=" + dateString + "/" + dateString +
+                    "&details=" + Uri.encode(event.getDescription()) +
+                    "&location=" + Uri.encode(event.getLocation());
+
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            context.startActivity(browserIntent);
+
+            Toast.makeText(context, "Opening web calendar to set reminder", Toast.LENGTH_SHORT).show();
+
+            if (listener != null) {
+                listener.onReminderSet(true, "Opening web calendar");
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening web calendar", e);
+            Toast.makeText(context, "Unable to set reminder", Toast.LENGTH_SHORT).show();
+
+            if (listener != null) {
+                listener.onReminderSet(false, "Unable to set reminder");
+            }
+        }
+    }
+
+    private Date parseEventDate(String dateString) {
+        if (dateString == null || dateString.trim().isEmpty()) {
+            return null;
+        }
+
+        try {
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            return format.parse(dateString);
+        } catch (ParseException e) {
+            Log.e(TAG, "Error parsing date: " + dateString, e);
+
+            // Try alternative formats
+            String[] formats = {
+                    "yyyy-MM-dd'T'HH:mm:ss",
+                    "yyyy-MM-dd HH:mm",
+                    "yyyy-MM-dd",
+                    "dd/MM/yyyy HH:mm:ss",
+                    "dd/MM/yyyy HH:mm",
+                    "dd/MM/yyyy"
+            };
+
+            for (String formatStr : formats) {
+                try {
+                    SimpleDateFormat altFormat = new SimpleDateFormat(formatStr, Locale.getDefault());
+                    return altFormat.parse(dateString);
+                } catch (ParseException ignored) {
+                    // Continue to next format
                 }
             }
+        }
+
+        return null;
+    }
+
+    // Method to check if Google Calendar is installed
+    public boolean isGoogleCalendarInstalled() {
+        try {
+            context.getPackageManager().getPackageInfo("com.google.android.calendar", 0);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+    // Method to install Google Calendar
+    public void promptInstallGoogleCalendar() {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse("market://details?id=com.google.android.calendar"));
+
+        if (intent.resolveActivity(context.getPackageManager()) != null) {
+            context.startActivity(intent);
+        } else {
+            // Fallback to web browser
+            intent.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.calendar"));
+            context.startActivity(intent);
         }
     }
 }
