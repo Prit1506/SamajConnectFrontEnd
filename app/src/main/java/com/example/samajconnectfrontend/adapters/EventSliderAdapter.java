@@ -37,6 +37,7 @@ import com.example.samajconnectfrontend.models.ReactionType;
 import com.example.samajconnectfrontend.models.UserIdRequest;
 import com.example.samajconnectfrontend.dialogs.EventDetailsDialog;
 import com.example.samajconnectfrontend.dialogs.FullScreenImageDialog;
+import com.example.samajconnectfrontend.utils.CalendarReminderHelper;
 import com.google.gson.Gson;
 
 import org.json.JSONException;
@@ -68,6 +69,9 @@ public class EventSliderAdapter extends RecyclerView.Adapter<EventSliderAdapter.
     private boolean hasMorePages = true;
     private int currentPage = 0;
     private OnLoadMoreListener loadMoreListener;
+
+    private LinearLayout reminderButtonContainer;
+    private CalendarReminderHelper calendarHelper;
 
     public interface OnEventActionListener {
         void onEventClick(Event event);
@@ -181,6 +185,56 @@ public class EventSliderAdapter extends RecyclerView.Adapter<EventSliderAdapter.
             dislikeIcon = itemView.findViewById(R.id.dislikeIcon);
             likeCountText = itemView.findViewById(R.id.likeCountText);
             dislikeCountText = itemView.findViewById(R.id.dislikeCountText);
+
+            reminderButtonContainer = itemView.findViewById(R.id.reminderButtonContainer);
+
+            calendarHelper = new CalendarReminderHelper(context);
+            calendarHelper.setOnReminderSetListener(new CalendarReminderHelper.OnReminderSetListener() {
+                @Override
+                public void onReminderSet(boolean success, String message) {
+                    // Handle reminder set result
+                    if (success) {
+                        // Optionally update UI to show reminder is set
+                        updateReminderButtonState(true);
+                    }
+                    // Toast is already shown in CalendarHelper, so no need to show again
+                }
+
+                @Override
+                public void onPermissionRequired() {
+                    Toast.makeText(context, "Please grant calendar permissions to set reminders",
+                            Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
+        private void setupReminderListener(Event event) {
+            reminderButtonContainer.setOnClickListener(v -> {
+                // Create final reference for lambda
+                final Event finalEvent = event;
+
+                // Set reminder using calendar helper
+                calendarHelper.setEventReminder(finalEvent);
+
+                // Provide visual feedback
+                Toast.makeText(context, "Setting up reminder...", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        // Add this method to EventViewHolder class
+        private void updateReminderButtonState(boolean isSet) {
+            // You can update the reminder button appearance here
+            // For example, change icon or text color to indicate reminder is set
+            if (isSet) {
+                // Change to "filled" alarm icon or different color
+                ImageView reminderIcon = reminderButtonContainer.findViewById(R.id.reminderIcon);
+                if (reminderIcon != null) {
+                    reminderIcon.setImageResource(R.drawable.ic_alarm_on); // You'll need this drawable
+                    // Or change tint color
+                    // ImageViewCompat.setImageTintList(reminderIcon,
+                    //     ColorStateList.valueOf(ContextCompat.getColor(context, R.color.reminder_active_color)));
+                }
+            }
         }
 
         public void bind(Event event) {
@@ -217,6 +271,8 @@ public class EventSliderAdapter extends RecyclerView.Adapter<EventSliderAdapter.
             // Setup reaction functionality
             setupReactionListeners(finalEvent);
             loadReactionStats(finalEvent);
+
+            setupReminderListener(event);
         }
 
         private void setupClickListeners(Event event) {

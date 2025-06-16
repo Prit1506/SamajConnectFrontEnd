@@ -1,11 +1,13 @@
 package com.example.samajconnectfrontend;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -690,6 +692,31 @@ public class DashboardActivity extends AppCompatActivity {
 
         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
         onDataLoadError();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        // Handle calendar permissions
+        if (requestCode == 1001) { // CALENDAR_PERMISSION_REQUEST_CODE
+            // You can create a static method in CalendarReminderHelper to handle this
+            // or pass the result to your adapter if needed
+
+            boolean allGranted = true;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+
+            if (allGranted) {
+                Toast.makeText(this, "You can now set reminders for events", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Calendar permission is required to set reminders", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     @Override

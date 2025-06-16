@@ -151,6 +151,38 @@
 
                 </LinearLayout>
 
+                <!-- NEW: View Details Button -->
+                <LinearLayout
+                    android:id="@+id/viewDetailsContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:orientation="horizontal"
+                    android:background="@drawable/view_reactions_background"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="8dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="12dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_info"
+                        app:tint="#1db7ae"
+                        android:layout_marginEnd="4dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Details"
+                        android:textColor="#1db7ae"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
             </LinearLayout>
 
             <!-- Reaction Section -->
@@ -241,36 +273,7 @@
 
                     </LinearLayout>
 
-                    <!-- NEW: View Details Button -->
-                    <LinearLayout
-                        android:id="@+id/viewDetailsContainer"
-                        android:layout_width="wrap_content"
-                        android:layout_height="38dp"
-                        android:orientation="horizontal"
-                        android:background="@drawable/view_reactions_background"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="8dp"
-                        android:gravity="center"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:layout_marginEnd="12dp">
 
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:src="@drawable/ic_info"
-                            app:tint="#1db7ae"
-                            android:layout_marginEnd="4dp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Details"
-                            android:textColor="#1db7ae"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                    </LinearLayout>
 
                     <!-- View Reactions Button -->
                     <LinearLayout

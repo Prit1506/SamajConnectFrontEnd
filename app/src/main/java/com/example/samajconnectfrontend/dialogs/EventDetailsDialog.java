@@ -43,7 +43,7 @@ public class EventDetailsDialog extends Dialog {
     private TextView eventTimeTextView;
 
     public EventDetailsDialog(@NonNull Context context, Event event) {
-        super(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        super(context);
         this.context = context;
         this.event = event;
 
