@@ -37,6 +37,8 @@ import com.example.samajconnectfrontend.models.ReactionRequest;
 import com.example.samajconnectfrontend.models.ReactionStats;
 import com.example.samajconnectfrontend.models.ReactionType;
 import com.example.samajconnectfrontend.models.UserIdRequest;
+import com.example.samajconnectfrontend.dialogs.EventDetailsDialog;
+import com.example.samajconnectfrontend.dialogs.FullScreenImageDialog;
 import com.google.android.material.button.MaterialButton;
 import com.google.gson.Gson;
 
@@ -70,6 +72,9 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         void onUpdateEvent(Event event);
         void onDeleteEvent(Event event);
         void onViewReactions(Event event, ReactionStats stats);
+        void onEventClick(Event event);
+        void onEventImageClick(Event event);
+        void onEventDetailsClick(Event event);
     }
 
     public EventAdapter(Context context, List<Event> eventList, boolean isAdmin, OnEventActionListener listener) {
@@ -123,6 +128,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         private TextView dislikeCountText;
         private TextView viewReactionsText;
         private LinearLayout reactionProgressContainer;
+        private LinearLayout viewDetailsContainer;
         private View likeProgressBar;
         private View dislikeProgressBar;
         private TextView reactionSummaryText;
@@ -136,7 +142,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
             eventImageView = itemView.findViewById(R.id.eventImageView);
             eventTitleTextView = itemView.findViewById(R.id.eventTitleTextView);
-            eventDescriptionTextView = itemView.findViewById(R.id.eventDescriptionTextView);
+           // eventDescriptionTextView = itemView.findViewById(R.id.eventDescriptionTextView);
             eventDateTextView = itemView.findViewById(R.id.eventDateTextView);
             eventLocationTextView = itemView.findViewById(R.id.eventLocationTextView);
             adminButtonsLayout = itemView.findViewById(R.id.adminButtonsLayout);
@@ -147,6 +153,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             likeButtonContainer = itemView.findViewById(R.id.likeButtonContainer);
             dislikeButtonContainer = itemView.findViewById(R.id.dislikeButtonContainer);
             viewReactionsContainer = itemView.findViewById(R.id.viewReactionsContainer);
+            viewDetailsContainer = itemView.findViewById(R.id.viewDetailsContainer);
             likeIcon = itemView.findViewById(R.id.likeIcon);
             dislikeIcon = itemView.findViewById(R.id.dislikeIcon);
             likeCountText = itemView.findViewById(R.id.likeCountText);
@@ -161,46 +168,53 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         public void bind(Event event) {
             Log.d(TAG, "Binding event: " + event.getEventTitle());
 
+            // Create a final reference to the event for use in lambda expressions
+            final Event finalEvent = event;
+
             // Set event title
-            if (!TextUtils.isEmpty(event.getEventTitle())) {
-                eventTitleTextView.setText(event.getEventTitle());
+            if (!TextUtils.isEmpty(finalEvent.getEventTitle())) {
+                eventTitleTextView.setText(finalEvent.getEventTitle());
             } else {
                 eventTitleTextView.setText("Untitled Event");
             }
 
             // Set event description
-            if (!TextUtils.isEmpty(event.getEventDescription())) {
-                eventDescriptionTextView.setText(event.getEventDescription());
-                eventDescriptionTextView.setVisibility(View.VISIBLE);
-            } else {
-                eventDescriptionTextView.setVisibility(View.GONE);
-            }
+//            if (!TextUtils.isEmpty(finalEvent.getEventDescription())) {
+//                eventDescriptionTextView.setText(finalEvent.getEventDescription());
+//                eventDescriptionTextView.setVisibility(View.VISIBLE);
+//            } else {
+//                eventDescriptionTextView.setVisibility(View.GONE);
+//            }
 
             // Set event date and time - format the date
-            String formattedDate = formatDate(event.getEventDate());
+            String formattedDate = formatDate(finalEvent.getEventDate());
             eventDateTextView.setText(formattedDate);
 
             // Set event location
-            if (!TextUtils.isEmpty(event.getLocation())) {
-                eventLocationTextView.setText(event.getLocation());
+            if (!TextUtils.isEmpty(finalEvent.getLocation())) {
+                eventLocationTextView.setText(finalEvent.getLocation());
                 eventLocationTextView.setVisibility(View.VISIBLE);
             } else {
                 eventLocationTextView.setText("Location TBD");
             }
+
             // Load event image - prioritize Base64 over URL
-            loadEventImage(event);
+            loadEventImage(finalEvent);
 
             // Show/hide admin buttons based on admin status
             if (isAdmin) {
                 adminButtonsLayout.setVisibility(View.VISIBLE);
-                setupAdminButtonClickListeners(event);
+                setupAdminButtonClickListeners(finalEvent);
             } else {
                 adminButtonsLayout.setVisibility(View.GONE);
             }
 
+            // Setup click listeners for dialogs
+            setupClickListeners(finalEvent);
+
             // Setup reaction functionality
-            setupReactionListeners(event);
-            loadReactionStats(event);
+            setupReactionListeners(finalEvent);
+            loadReactionStats(finalEvent);
 
             // Show/hide view reactions for admin only
             if (isAdmin) {
@@ -210,22 +224,185 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             }
         }
 
+        // Enhanced setupClickListeners method in EventAdapter.java - EventViewHolder class
+
+        private void setupClickListeners(Event event) {
+            // Create final reference for lambda expressions
+            final Event finalEvent = event;
+
+            // Image click for full screen view
+            eventImageView.setOnClickListener(v -> {
+                Log.d(TAG, "Image clicked for event: " + finalEvent.getEventTitle());
+
+                try {
+                    // Show full screen image dialog
+                    FullScreenImageDialog imageDialog = new FullScreenImageDialog(context, finalEvent);
+                    imageDialog.show();
+
+                    // Also call the listener callback
+                    if (listener != null) {
+                        listener.onEventImageClick(finalEvent);
+                    }
+
+                    Log.d(TAG, "Full screen image dialog shown successfully");
+                } catch (Exception e) {
+                    Log.e(TAG, "Error showing full screen image dialog", e);
+                    Toast.makeText(context, "Error displaying image", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            // Title click for event details
+            eventTitleTextView.setOnClickListener(v -> {
+                Log.d(TAG, "Title clicked for event: " + finalEvent.getEventTitle());
+
+                try {
+                    // Show event details dialog
+                    EventDetailsDialog detailsDialog = new EventDetailsDialog(context, finalEvent);
+                    detailsDialog.show();
+
+                    // Also call the listener callback
+                    if (listener != null) {
+                        listener.onEventClick(finalEvent);
+                    }
+
+                    Log.d(TAG, "Event details dialog shown from title click");
+                } catch (Exception e) {
+                    Log.e(TAG, "Error showing event details dialog from title", e);
+                    Toast.makeText(context, "Error displaying event details", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            // Description click for event details
+//            eventDescriptionTextView.setOnClickListener(v -> {
+//                Log.d(TAG, "Description clicked for event: " + finalEvent.getEventTitle());
+//
+//                try {
+//                    // Show event details dialog
+//                    EventDetailsDialog detailsDialog = new EventDetailsDialog(context, finalEvent);
+//                    detailsDialog.show();
+//
+//                    // Also call the listener callback
+//                    if (listener != null) {
+//                        listener.onEventDetailsClick(finalEvent);
+//                    }
+//
+//                    Log.d(TAG, "Event details dialog shown from description click");
+//                } catch (Exception e) {
+//                    Log.e(TAG, "Error showing event details dialog from description", e);
+//                    Toast.makeText(context, "Error displaying event details", Toast.LENGTH_SHORT).show();
+//                }
+//            });
+
+            // Date/Time click for event details
+            eventDateTextView.setOnClickListener(v -> {
+                Log.d(TAG, "Date clicked for event: " + finalEvent.getEventTitle());
+
+                try {
+                    // Show event details dialog
+                    EventDetailsDialog detailsDialog = new EventDetailsDialog(context, finalEvent);
+                    detailsDialog.show();
+
+                    // Also call the listener callback
+                    if (listener != null) {
+                        listener.onEventDetailsClick(finalEvent);
+                    }
+
+                    Log.d(TAG, "Event details dialog shown from date click");
+                } catch (Exception e) {
+                    Log.e(TAG, "Error showing event details dialog from date", e);
+                    Toast.makeText(context, "Error displaying event details", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            // Location click for event details
+            eventLocationTextView.setOnClickListener(v -> {
+                Log.d(TAG, "Location clicked for event: " + finalEvent.getEventTitle());
+
+                try {
+                    // Show event details dialog
+                    EventDetailsDialog detailsDialog = new EventDetailsDialog(context, finalEvent);
+                    detailsDialog.show();
+
+                    // Also call the listener callback
+                    if (listener != null) {
+                        listener.onEventDetailsClick(finalEvent);
+                    }
+
+                    Log.d(TAG, "Event details dialog shown from location click");
+                } catch (Exception e) {
+                    Log.e(TAG, "Error showing event details dialog from location", e);
+                    Toast.makeText(context, "Error displaying event details", Toast.LENGTH_SHORT).show();
+                }
+            });
+            viewDetailsContainer.setOnClickListener(v -> {
+                EventDetailsDialog detailsDialog = new EventDetailsDialog(context, finalEvent);
+                detailsDialog.show();
+                // Also call the listener callback
+                if (listener != null) {
+                    listener.onEventDetailsClick(finalEvent);
+                }
+            });
+
+            // Card click for event details (general card click, avoiding admin buttons and reaction buttons)
+            itemView.setOnClickListener(v -> {
+                Log.d(TAG, "Card clicked for event: " + finalEvent.getEventTitle());
+
+                try {
+                    // Show event details dialog
+                    EventDetailsDialog detailsDialog = new EventDetailsDialog(context, finalEvent);
+                    detailsDialog.show();
+
+                    // Also call the listener callback
+                    if (listener != null) {
+                        listener.onEventClick(finalEvent);
+                    }
+
+                    Log.d(TAG, "Event details dialog shown from card click");
+                } catch (Exception e) {
+                    Log.e(TAG, "Error showing event details dialog from card", e);
+                    Toast.makeText(context, "Error displaying event details", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            // Prevent click events from bubbling up when clicking on admin buttons or reaction buttons
+            if (adminButtonsLayout != null) {
+                adminButtonsLayout.setOnClickListener(v -> {
+                    // Consume click to prevent card click
+                });
+            }
+
+            if (likeButtonContainer != null) {
+                // Don't set up a consuming click listener here since we already handle reactions
+            }
+
+            if (dislikeButtonContainer != null) {
+                // Don't set up a consuming click listener here since we already handle reactions
+            }
+
+            if (viewReactionsContainer != null) {
+                // Don't set up a consuming click listener here since we already handle view reactions
+            }
+        }
+
         private void setupReactionListeners(Event event) {
+            // Create final reference for lambda expressions
+            final Event finalEvent = event;
+
             likeButtonContainer.setOnClickListener(v -> {
                 if (!isLoadingReaction) {
-                    handleReactionClick(event, ReactionType.LIKE);
+                    handleReactionClick(finalEvent, ReactionType.LIKE);
                 }
             });
 
             dislikeButtonContainer.setOnClickListener(v -> {
                 if (!isLoadingReaction) {
-                    handleReactionClick(event, ReactionType.DISLIKE);
+                    handleReactionClick(finalEvent, ReactionType.DISLIKE);
                 }
             });
 
             viewReactionsContainer.setOnClickListener(v -> {
                 if (listener != null && currentStats != null) {
-                    listener.onViewReactions(event, currentStats);
+                    listener.onViewReactions(finalEvent, currentStats);
                 }
             });
         }
@@ -431,7 +608,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 viewReactionsText.setText(reactionsText);
             }
         }
-
         private void updateReactionButtonStates() {
             // Reset to default state first
             likeIcon.setImageResource(R.drawable.ic_thumb_up_outline);
@@ -458,8 +634,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 }
             }
         }
-
-
         private void updateReactionProgress() {
             if (currentStats.getTotalReactions() == 0) {
                 reactionProgressContainer.setVisibility(View.GONE);
@@ -491,7 +665,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 reactionSummaryText.setVisibility(View.GONE);
             }
         }
-
         private void updateReactionButtonsLoadingState(boolean isLoading) {
             likeButtonContainer.setEnabled(!isLoading);
             dislikeButtonContainer.setEnabled(!isLoading);
@@ -543,12 +716,10 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 eventImageView.setImageResource(R.drawable.logo_banner);
             }
         }
-
         private String formatDate(String dateString) {
             if (TextUtils.isEmpty(dateString)) {
                 return "Date TBD";
             }
-
             try {
                 SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
                 SimpleDateFormat outputFormat = new SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault());
@@ -559,7 +730,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 return dateString; // Return original if parsing fails
             }
         }
-
         private void setupAdminButtonClickListeners(Event event) {
             updateEventButton.setOnClickListener(v -> {
                 if (listener != null) {
@@ -574,7 +744,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             });
         }
     }
-
     // FIXED: Method to update the dataset
     @SuppressLint("NotifyDataSetChanged")
     public void updateEvents(List<Event> newEventList) {

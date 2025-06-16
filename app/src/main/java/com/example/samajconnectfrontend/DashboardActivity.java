@@ -240,9 +240,9 @@ public class DashboardActivity extends AppCompatActivity {
         snapHelper.attachToRecyclerView(eventsRecyclerView);
 
         // Set click listener for events
-        eventSliderAdapter.setOnEventClickListener(event -> {
-            Toast.makeText(this, "Clicked: " + event.getEventTitle(), Toast.LENGTH_SHORT).show();
-        });
+//        eventSliderAdapter.setOnEventClickListener(event -> {
+//            Toast.makeText(this, "Clicked: " + event.getEventTitle(), Toast.LENGTH_SHORT).show();
+//        });
 
         // Add scroll listener to handle user interaction
         eventsRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {

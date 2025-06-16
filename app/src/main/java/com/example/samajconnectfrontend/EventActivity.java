@@ -1,5 +1,6 @@
 package com.example.samajconnectfrontend;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -27,6 +28,8 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.samajconnectfrontend.adapters.EventAdapter;
+import com.example.samajconnectfrontend.dialogs.EventDetailsDialog;
+import com.example.samajconnectfrontend.dialogs.FullScreenImageDialog;
 import com.example.samajconnectfrontend.models.Event;
 import com.example.samajconnectfrontend.models.EventResponse;
 import com.example.samajconnectfrontend.models.ReactionStats;
@@ -59,6 +62,7 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
     private long currentUserId;
     private long currentSamajId;
     private RequestQueue requestQueue;
+    private Context context;
     private boolean isFirstLoad = true;
     private boolean isLoadingEvents = false;
 
@@ -517,6 +521,56 @@ public class EventActivity extends AppCompatActivity implements EventAdapter.OnE
                 .setMessage(message)
                 .setPositiveButton("OK", null)
                 .show();
+    }
+
+    // Updated EventActivity.java - Interface method implementations for dialog clicks
+
+    @Override
+    public void onEventClick(Event event) {
+        Log.d(TAG, "Event clicked: " + event.getEventTitle());
+
+        try {
+            // Show event details dialog
+            EventDetailsDialog detailsDialog = new EventDetailsDialog(this, event);
+            detailsDialog.show();
+
+            Log.d(TAG, "EventDetailsDialog displayed successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing event details dialog", e);
+            Toast.makeText(this, "Error displaying event details", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onEventImageClick(Event event) {
+        Log.d(TAG, "Event image clicked: " + event.getEventTitle());
+
+        try {
+            // Show full screen image dialog
+            FullScreenImageDialog imageDialog = new FullScreenImageDialog(this, event);
+            imageDialog.show();
+
+            Log.d(TAG, "FullScreenImageDialog displayed successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing full screen image dialog", e);
+            Toast.makeText(this, "Error displaying image", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onEventDetailsClick(Event event) {
+        Log.d(TAG, "Event details section clicked: " + event.getEventTitle());
+
+        try {
+            // Show event details dialog - same as onEventClick but with different log message
+            EventDetailsDialog detailsDialog = new EventDetailsDialog(this, event);
+            detailsDialog.show();
+
+            Log.d(TAG, "EventDetailsDialog displayed from details click");
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing event details dialog from details click", e);
+            Toast.makeText(this, "Error displaying event details", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void deleteEvent(Event event) {

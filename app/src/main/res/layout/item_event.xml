@@ -25,7 +25,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
-                android:src="@drawable/logo_banner" />
+                android:src="@drawable/logo_banner"
+                android:clickable="true"
+                android:focusable="true" />
 
             <!-- Gradient Overlay for better text readability -->
             <View
@@ -33,7 +35,24 @@
                 android:layout_height="60dp"
                 android:layout_gravity="bottom"
                 android:background="@drawable/gradient_overlay" />
+            <!-- Image overlay indicator -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_margin="12dp"
+                android:background="@drawable/image_overlay_background"
+                android:padding="8dp"
+                android:orientation="horizontal"
+                android:gravity="center">
 
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_fullscreen"
+                    app:tint="@android:color/white" />
+
+            </LinearLayout>
         </FrameLayout>
 
         <!-- Event Content -->
@@ -54,20 +73,22 @@
                 android:textColor="#1a1a1a"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:lineSpacingExtra="2dp" />
+                android:lineSpacingExtra="2dp"
+                android:clickable="true"
+                android:focusable="true" />
 
             <!-- Event Description -->
-            <TextView
-                android:id="@+id/eventDescriptionTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:ellipsize="end"
-                android:maxLines="3"
-                android:text="Event description with more details about the event"
-                android:textColor="#555555"
-                android:textSize="14sp"
-                android:lineSpacingExtra="4dp" />
+<!--            <TextView-->
+<!--                android:id="@+id/eventDescriptionTextView"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginTop="12dp"-->
+<!--                android:ellipsize="end"-->
+<!--                android:maxLines="3"-->
+<!--                android:text="Event description with more details about the event"-->
+<!--                android:textColor="#555555"-->
+<!--                android:textSize="14sp"-->
+<!--                android:lineSpacingExtra="4dp" />-->
 
             <!-- Event Details Container -->
             <LinearLayout
@@ -217,6 +238,37 @@
                             android:textStyle="bold"
                             android:minWidth="24dp"
                             android:gravity="center" />
+
+                    </LinearLayout>
+
+                    <!-- NEW: View Details Button -->
+                    <LinearLayout
+                        android:id="@+id/viewDetailsContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        android:orientation="horizontal"
+                        android:background="@drawable/view_reactions_background"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="8dp"
+                        android:gravity="center"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_marginEnd="12dp">
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:src="@drawable/ic_info"
+                            app:tint="#1db7ae"
+                            android:layout_marginEnd="4dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Details"
+                            android:textColor="#1db7ae"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
 
                     </LinearLayout>
 
