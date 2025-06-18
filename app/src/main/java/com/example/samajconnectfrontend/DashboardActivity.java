@@ -113,8 +113,9 @@ public class DashboardActivity extends AppCompatActivity {
         eventsLinearLayout.setOnClickListener(view ->
                 startActivity(new Intent(DashboardActivity.this, EventActivity.class)));
 
-        profileImageView.setOnClickListener(view ->
-                startActivity(new Intent(DashboardActivity.this, ProfileActivity.class)));
+        profileImageView.setOnClickListener(view -> startActivity(new Intent(DashboardActivity.this, ProfileActivity.class)));
+
+        profileTextView.setOnClickListener(view -> startActivity(new Intent(DashboardActivity.this, ProfileActivity.class)));
     }
 
     private void setupSwipeRefresh() {
