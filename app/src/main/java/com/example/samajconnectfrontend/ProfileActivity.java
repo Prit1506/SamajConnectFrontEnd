@@ -29,6 +29,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -264,10 +265,14 @@ public class ProfileActivity extends AppCompatActivity {
 
             if (bitmap != null) {
                 // Resize bitmap to reduce size
-                bitmap = resizeBitmap(bitmap, 300, 300);
+                bitmap = resizeBitmap(bitmap, 400, 400);
                 profileImage.setImageBitmap(bitmap);
                 encodedImageString = encodeImageToBase64(bitmap);
                 hasImageChanged = true;
+                Log.d(TAG, "Image selected and encoded");
+                Log.d(TAG, "Encoded Image Length: " + encodedImageString.length());
+                Log.d(TAG, "Has Image Changed: " + hasImageChanged);
+
             }
         }
     }
@@ -290,7 +295,7 @@ public class ProfileActivity extends AppCompatActivity {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 70, byteArrayOutputStream);
         byte[] byteArray = byteArrayOutputStream.toByteArray();
-        return Base64.encodeToString(byteArray, Base64.DEFAULT);
+        return Base64.encodeToString(byteArray, Base64.NO_WRAP);
     }
 
     private void saveProfile() {
@@ -310,8 +315,9 @@ public class ProfileActivity extends AppCompatActivity {
             requestBody.put("phoneNumber", phone);
 
             if (hasImageChanged && !encodedImageString.isEmpty()) {
-                requestBody.put("profileImg", encodedImageString);
+                requestBody.put("imageBase64", encodedImageString);
             }
+            Log.d(TAG, "Request Body: " + requestBody);
         } catch (JSONException e) {
             Log.e(TAG, "Error creating request body: " + e.getMessage());
             return;
@@ -320,35 +326,30 @@ public class ProfileActivity extends AppCompatActivity {
         String url = baseUrl + "/users/" + userId + "/profile";
 
         JsonObjectRequest request = new JsonObjectRequest(
-                Request.Method.PUT,
+                Request.Method.POST,
                 url,
                 requestBody,
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            if (response.getBoolean("success")) {
-                                Toast.makeText(ProfileActivity.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
-                                hasImageChanged = false; // Reset flag
-                            } else {
-                                String message = response.getString("message");
-                                Toast.makeText(ProfileActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
-                            }
-                        } catch (JSONException e) {
-                            Log.e(TAG, "JSON parsing error: " + e.getMessage());
-                            Toast.makeText(ProfileActivity.this, "Error updating profile", Toast.LENGTH_SHORT).show();
+                response -> {
+                    try {
+                        if (response.getBoolean("success")) {
+                            Toast.makeText(ProfileActivity.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+                            hasImageChanged = false; // Reset flag
+                        } else {
+                            String message = response.getString("message");
+                            Toast.makeText(ProfileActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
                         }
+                    } catch (JSONException e) {
+                        Log.e(TAG, "JSON parsing error: " + e.getMessage());
+                        Toast.makeText(ProfileActivity.this, "Error updating profile", Toast.LENGTH_SHORT).show();
                     }
                 },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Log.e(TAG, "Error updating profile: " + error.getMessage());
-                        Toast.makeText(ProfileActivity.this, "Failed to update profile", Toast.LENGTH_SHORT).show();
-                    }
+                error -> {
+                    Log.e(TAG, "Error updating profile: " + error.getMessage());
+                    Toast.makeText(ProfileActivity.this, "Failed to update profile", Toast.LENGTH_SHORT).show();
                 }
         );
 
+        request.setRetryPolicy(new DefaultRetryPolicy(150000, 0, 1.0f));
         requestQueue.add(request);
     }
 

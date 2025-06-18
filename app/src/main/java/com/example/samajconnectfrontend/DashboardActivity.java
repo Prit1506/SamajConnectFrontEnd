@@ -45,6 +45,10 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Base64;
+
 public class DashboardActivity extends AppCompatActivity {
 
     private TextView userNameTextView, samajNameTextView, profileTextView;
@@ -430,24 +434,32 @@ public class DashboardActivity extends AppCompatActivity {
             // Check if response has success field
             if (response.has("success") && response.getBoolean("success")) {
                 JSONObject userData = response.getJSONObject("user");
+
+                // Set admin flag and shared prefs as you're already doing
                 SharedPreferences sharedPreferences = getSharedPreferences("SamajConnect", MODE_PRIVATE);
-                Log.d("DashboardActivity", "isAdmin from user details: " + userData.getBoolean("isAdmin"));
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putBoolean("is_admin", userData.getBoolean("isAdmin"));
                 editor.apply();
 
+                // ✅ Decode and set profile image
+                if (userData.has("profileImgBase64") && !userData.isNull("profileImgBase64")) {
+                    String base64Image = userData.getString("profileImgBase64");
+                    if (!base64Image.isEmpty()) {
+                        byte[] decodedBytes = Base64.decode(base64Image, Base64.DEFAULT);
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+                        profileImageView.setImageBitmap(bitmap); // <-- Your ImageView here
+                    }
+                }
+
+                // Continue with samaj loading
                 if (userData.has("samaj") && !userData.isNull("samaj")) {
                     JSONObject samajData = userData.getJSONObject("samaj");
                     currentSamajId = samajData.getLong("id");
                     editor.putLong("samaj_id", currentSamajId);
                     editor.apply();
-                    Log.d("DashboardActivity", "Found samaj_id from user details: " + currentSamajId);
-
-                    // Now load samaj details and events
                     loadSamajData();
                     loadEvents();
                 } else {
-                    Log.w("DashboardActivity", "No samaj data found in user details");
                     samajNameTextView.setText("No Samaj Assigned");
                     onDataLoadError();
                 }
