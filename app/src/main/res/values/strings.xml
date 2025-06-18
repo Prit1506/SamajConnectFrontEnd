@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">SamajConnectFrontEnd</string>
+    <string name="profile"><u>Profile</u></string>
 </resources>

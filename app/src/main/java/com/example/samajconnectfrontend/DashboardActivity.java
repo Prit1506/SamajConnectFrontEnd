@@ -47,7 +47,7 @@ import java.util.List;
 
 public class DashboardActivity extends AppCompatActivity {
 
-    private TextView userNameTextView, samajNameTextView;
+    private TextView userNameTextView, samajNameTextView, profileTextView;
     private ImageView profileImageView;
     private LinearLayout eventsLinearLayout;
     private SwipeRefreshLayout swipeRefreshLayout;
@@ -108,9 +108,13 @@ public class DashboardActivity extends AppCompatActivity {
         eventsLinearLayout = findViewById(R.id.eventsLinearLayout);
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
         mainScrollView = findViewById(R.id.mainScrollView);
+        profileTextView = findViewById(R.id.txtProfile);
 
         eventsLinearLayout.setOnClickListener(view ->
                 startActivity(new Intent(DashboardActivity.this, EventActivity.class)));
+
+        profileImageView.setOnClickListener(view ->
+                startActivity(new Intent(DashboardActivity.this, ProfileActivity.class)));
     }
 
     private void setupSwipeRefresh() {
