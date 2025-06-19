@@ -52,7 +52,7 @@ public class ProfileActivity extends AppCompatActivity {
     private static final int STORAGE_PERMISSION_CODE = 101;
 
     // UI Components
-    private ImageView profileImage;
+    private ImageView profileImage, backArrow;
     private TextView emailTextView, adminStatusTextView, samajIdTextView;
     private EditText nameEditText, addressEditText, phoneEditText;
     private Button changeImageButton, saveButton, forgotPasswordButton;
@@ -83,7 +83,6 @@ public class ProfileActivity extends AppCompatActivity {
         // Get user ID from intent or SharedPreferences
         userId = getSharedPreferences("SamajConnect", MODE_PRIVATE).getLong("user_id", -1);
 
-
         if (userId != -1) {
             loadUserProfile();
         } else {
@@ -93,6 +92,10 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void initializeViews() {
+        // Header components
+        backArrow = findViewById(R.id.back_arrow);
+
+        // Profile components
         profileImage = findViewById(R.id.profile_image);
         emailTextView = findViewById(R.id.email_text_view);
         adminStatusTextView = findViewById(R.id.admin_status_text_view);
@@ -106,6 +109,10 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void setupClickListeners() {
+        // Header back button
+        backArrow.setOnClickListener(v -> onBackPressed());
+
+        // Profile buttons
         changeImageButton.setOnClickListener(v -> showImagePickerDialog());
         saveButton.setOnClickListener(v -> saveProfile());
         forgotPasswordButton.setOnClickListener(v -> openForgotPasswordActivity());
@@ -272,7 +279,6 @@ public class ProfileActivity extends AppCompatActivity {
                 Log.d(TAG, "Image selected and encoded");
                 Log.d(TAG, "Encoded Image Length: " + encodedImageString.length());
                 Log.d(TAG, "Has Image Changed: " + hasImageChanged);
-
             }
         }
     }
