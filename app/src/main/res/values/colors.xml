@@ -6,7 +6,6 @@
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
     <!-- Primary Colors -->
     <color name="colorPrimary">#1db7ae</color>
     <color name="colorPrimaryDark">#00a693</color>
@@ -16,9 +15,6 @@
     <color name="colorPrimaryVariant">#00a693</color>
     <color name="colorSecondary">#ff6b6b</color>
     <color name="colorSecondaryVariant">#ff5252</color>
-    <color name="primary_color">#2196F3</color>
-    <color name="primary_dark">#1976D2</color>
-    <color name="primary_light">#BBDEFB</color>
 
     <!-- Text Colors -->
     <color name="colorOnPrimary">#FFFFFF</color>
@@ -39,9 +35,6 @@
     <color name="event_description_color">#555555</color>
     <color name="event_date_color">#1db7ae</color>
     <color name="event_location_color">#ff6b6b</color>
-
-    <!-- Accent Colors -->
-    <color name="accent_color">#FF5722</color>
 
     <!-- Text Colors -->
     <color name="primary_text_color">#212121</color>
@@ -84,10 +77,41 @@
     <color name="orange_500">#FF9800</color>
     <color name="orange_700">#F57C00</color>
 
-    <!-- Card Colors -->
-    <color name="card_background">#FFFFFF</color>
     <color name="card_stroke">#E0E0E0</color>
 
     <!-- Ripple Effect -->
     <color name="ripple_color">#1F000000</color>
+
+    <color name="primary_color">#4CAF50</color>
+    <color name="primary_dark">#388E3C</color>
+    <color name="primary_light">#C8E6C9</color>
+    <color name="accent_color">#FF5722</color>
+
+    <!-- Background Colors -->
+    <color name="background_start">#667eea</color>
+    <color name="background_end">#764ba2</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_background_translucent">#F8FFFFFF</color>
+
+    <!-- Text Colors -->
+    <color name="primary_text">#212121</color>
+    <color name="secondary_text">#757575</color>
+    <color name="white">#FFFFFF</color>
+    <color name="button_text_color">#FFFFFF</color>
+
+    <!-- Input Colors -->
+    <color name="input_stroke_color">#E0E0E0</color>
+    <color name="input_hint_color">#9E9E9E</color>
+    <color name="icon_tint">#757575</color>
+
+    <!-- Social Button Colors -->
+    <color name="google_button_color">#FFFFFF</color>
+    <color name="facebook_button_color">#1877F2</color>
+    <color name="social_button_text">#424242</color>
+
+    <!-- Divider Color -->
+    <color name="divider_color">#E0E0E0</color>
+
+    <!-- Status Bar -->
+    <color name="status_bar_color">#5A67D8</color>
 </resources>
