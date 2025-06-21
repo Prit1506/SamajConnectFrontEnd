@@ -173,14 +173,14 @@
                                 android:layout_width="85dp"
                                 android:layout_height="65dp"
                                 android:layout_margin="8dp"
-                                android:src="@drawable/video_call" />
+                                android:src="@drawable/Member" />
 
                             <TextView
                                 android:id="@+id/textView13"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginBottom="4dp"
-                                android:text="Video Call"
+                                android:text="Member"
                                 android:textAlignment="center"
                                 android:textColor="@color/white"
                                 android:textStyle="bold|italic" />
