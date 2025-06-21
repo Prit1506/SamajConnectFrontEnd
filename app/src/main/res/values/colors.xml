@@ -81,12 +81,12 @@
 
     <!-- Ripple Effect -->
     <color name="ripple_color">#1F000000</color>
-
     <color name="primary_color">#4CAF50</color>
+    <color name="background_color">#F5F5F5</color>
     <color name="primary_dark">#388E3C</color>
     <color name="primary_light">#C8E6C9</color>
     <color name="accent_color">#FF5722</color>
-
+    <color name="input_focused_color">#2196F3</color>
     <!-- Background Colors -->
     <color name="background_start">#667eea</color>
     <color name="background_end">#764ba2</color>
