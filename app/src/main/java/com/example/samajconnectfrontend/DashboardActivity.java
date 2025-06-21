@@ -1,5 +1,6 @@
 package com.example.samajconnectfrontend;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -48,12 +49,13 @@ import java.util.List;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
+import androidx.appcompat.app.AlertDialog;
 
 public class DashboardActivity extends AppCompatActivity {
 
     private TextView userNameTextView, samajNameTextView, profileTextView;
     private ImageView profileImageView;
-    private LinearLayout eventsLinearLayout;
+    private LinearLayout eventsLinearLayout, logoutLinearLayout;
     private SwipeRefreshLayout swipeRefreshLayout;
     private ScrollView mainScrollView;
 
@@ -113,6 +115,7 @@ public class DashboardActivity extends AppCompatActivity {
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
         mainScrollView = findViewById(R.id.mainScrollView);
         profileTextView = findViewById(R.id.txtProfile);
+        logoutLinearLayout = findViewById(R.id.logoutLinearLayout);
 
         eventsLinearLayout.setOnClickListener(view ->
                 startActivity(new Intent(DashboardActivity.this, EventActivity.class)));
@@ -120,6 +123,57 @@ public class DashboardActivity extends AppCompatActivity {
         profileImageView.setOnClickListener(view -> startActivity(new Intent(DashboardActivity.this, ProfileActivity.class)));
 
         profileTextView.setOnClickListener(view -> startActivity(new Intent(DashboardActivity.this, ProfileActivity.class)));
+
+        // Set up logout click listener
+        logoutLinearLayout.setOnClickListener(view -> showLogoutDialog());
+    }
+
+    private void showLogoutDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Logout")
+                .setMessage("Are you sure you want to logout?")
+                .setPositiveButton("Yes", (dialog, which) -> performLogout())
+                .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
+                .setIcon(R.drawable.ic_logout)
+                .show();
+    }
+
+    private void performLogout() {
+        try {
+            // Stop auto-scroll
+            stopAutoScroll();
+
+            // Clear SharedPreferences
+            SharedPreferences sharedPrefs = getSharedPreferences("SamajConnect", MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPrefs.edit();
+            editor.clear(); // This clears all stored data
+            editor.apply();
+
+            // Cancel any pending network requests
+            if (requestQueue != null) {
+                requestQueue.cancelAll(this);
+            }
+
+            // Show logout message
+            Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
+
+            // Navigate to login activity
+            Intent intent = new Intent(DashboardActivity.this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+
+            Log.d("DashboardActivity", "User logged out successfully");
+
+        } catch (Exception e) {
+            Log.e("DashboardActivity", "Error during logout: " + e.getMessage());
+            Toast.makeText(this, "Error during logout", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Alternative logout method without dialog (if you want direct logout)
+    private void performDirectLogout() {
+        performLogout();
     }
 
     private void setupSwipeRefresh() {
@@ -681,7 +735,7 @@ public class DashboardActivity extends AppCompatActivity {
                 }
             } else {
                 Toast.makeText(this, "No events found", Toast.LENGTH_SHORT).show();
-                Log.d("DashboardActivity", "No events found in response");
+                Log.d("DashboardActivity", "No events found in response");// Complete the handleEventsResponse method (add this to complete the method in your first document)
                 onDataLoadComplete();
             }
 
@@ -766,4 +820,66 @@ public class DashboardActivity extends AppCompatActivity {
         autoScrollRunnable = null;
         Log.d("DashboardActivity", "Activity destroyed - auto-scroll cleaned up");
     }
+
+    // Add this method to handle back button press (optional - for logout confirmation)
+    @SuppressLint("MissingSuperCall")
+    @Override
+    public void onBackPressed() {
+        // Show logout dialog when back button is pressed
+        showLogoutDialog();
+    }
+
+    // Additional logout helper methods (if you want more logout options)
+    private void showLogoutConfirmation() {
+        new AlertDialog.Builder(this)
+                .setTitle("Exit App")
+                .setMessage("Do you want to logout and exit the app?")
+                .setPositiveButton("Logout", (dialog, which) -> performLogout())
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .setNeutralButton("Minimize", (dialog, which) -> {
+                    // Just minimize the app without logout
+                    moveTaskToBack(true);
+                })
+                .setIcon(R.drawable.ic_logout)
+                .show();
+    }
+
+    // Method to clear specific user data (alternative to clearing all)
+    private void clearUserData() {
+        SharedPreferences sharedPrefs = getSharedPreferences("SamajConnect", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPrefs.edit();
+
+        // Clear only user-specific data, keep app settings if any
+        editor.remove("user_name");
+        editor.remove("user_email");
+        editor.remove("user_id");
+        editor.remove("auth_token");
+        editor.remove("samaj_id");
+        editor.remove("is_admin");
+
+        editor.apply();
+
+        Log.d("DashboardActivity", "User data cleared from SharedPreferences");
+    }
+
+    // Method to check if user is still logged in (call this in onResume if needed)
+    private boolean isUserLoggedIn() {
+        SharedPreferences sharedPrefs = getSharedPreferences("SamajConnect", MODE_PRIVATE);
+        String authToken = sharedPrefs.getString("auth_token", "");
+        Long userId = sharedPrefs.getLong("user_id", -1L);
+
+        return !authToken.isEmpty() && userId > 0;
+    }
+
+    // Method to handle session timeout
+    private void handleSessionTimeout() {
+        new AlertDialog.Builder(this)
+                .setTitle("Session Expired")
+                .setMessage("Your session has expired. Please login again.")
+                .setPositiveButton("Login", (dialog, which) -> performLogout())
+                .setCancelable(false)
+                .setIcon(R.drawable.ic_logout)
+                .show();
+    }
+
 }

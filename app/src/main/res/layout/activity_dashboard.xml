@@ -526,7 +526,9 @@
                                 android:textStyle="bold" />
                         </LinearLayout>
 
+                        <!-- Changed from Settings to Logout -->
                         <LinearLayout
+                            android:id="@+id/logoutLinearLayout"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -546,7 +548,7 @@
                                     app:layout_constraintEnd_toEndOf="parent"
                                     app:layout_constraintStart_toStartOf="parent"
                                     app:layout_constraintTop_toTopOf="parent"
-                                    app:srcCompat="@drawable/ic_8" />
+                                    app:srcCompat="@drawable/ic_logout" />
                             </androidx.constraintlayout.widget.ConstraintLayout>
 
                             <TextView
@@ -554,9 +556,9 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
-                                android:text="Settings"
+                                android:text="Logout"
                                 android:textAlignment="center"
-                                android:textColor="#2e3d6d"
+                                android:textColor="#d32f2f"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </LinearLayout>
