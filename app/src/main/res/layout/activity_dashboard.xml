@@ -173,7 +173,7 @@
                                 android:layout_width="85dp"
                                 android:layout_height="65dp"
                                 android:layout_margin="8dp"
-                                android:src="@drawable/Member" />
+                                android:src="@drawable/member" />
 
                             <TextView
                                 android:id="@+id/textView13"
