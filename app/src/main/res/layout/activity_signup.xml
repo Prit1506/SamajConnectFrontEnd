@@ -186,7 +186,72 @@
                 app:autoSizeTextType="uniform"
                 app:autoSizeMinTextSize="14sp"
                 app:autoSizeMaxTextSize="18sp" />
+            <!-- Add this code after the Confirm Password field and before the Dynamic Container -->
 
+            <!-- Gender Label -->
+            <TextView
+                android:id="@+id/textViewGender"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/signup_label_margin_top"
+                android:text="Gender"
+                android:textColor="#000000"
+                android:textSize="@dimen/label_text_size"
+                android:textStyle="bold"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="16sp"
+                app:autoSizeMaxTextSize="22sp" />
+
+            <!-- Gender Selection -->
+            <RadioGroup
+                android:id="@+id/radioGroupGender"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/signup_input_margin_top"
+                android:orientation="horizontal"
+                android:background="@drawable/edittext_background"
+                android:gravity="start">
+
+                <RadioButton
+                    android:id="@+id/radioButtonMale"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Male"
+                    android:textColor="#000000"
+                    android:textSize="@dimen/input_text_size"
+                    android:padding="8dp"
+                    app:autoSizeTextType="uniform"
+                    app:autoSizeMinTextSize="14sp"
+                    app:autoSizeMaxTextSize="18sp" />
+
+                <RadioButton
+                    android:id="@+id/radioButtonFemale"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Female"
+                    android:textColor="#000000"
+                    android:textSize="@dimen/input_text_size"
+                    android:padding="8dp"
+                    app:autoSizeTextType="uniform"
+                    app:autoSizeMinTextSize="14sp"
+                    app:autoSizeMaxTextSize="18sp" />
+
+                <RadioButton
+                    android:id="@+id/radioButtonOther"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Other"
+                    android:textColor="#000000"
+                    android:textSize="@dimen/input_text_size"
+                    android:padding="8dp"
+                    app:autoSizeTextType="uniform"
+                    app:autoSizeMinTextSize="14sp"
+                    app:autoSizeMaxTextSize="18sp" />
+
+            </RadioGroup>
             <!-- Password Label -->
             <TextView
                 android:id="@+id/textView5"

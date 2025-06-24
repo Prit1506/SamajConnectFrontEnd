@@ -12,6 +12,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -49,6 +51,10 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
     private EditText nameEditText, emailEditText, passwordEditText, confirmPasswordEditText;
     private Button registerButton;
     private LinearLayout dynamicFieldsLayout, adminFieldsLayout, samajSearchLayout;
+
+    // Gender Fields
+    private RadioGroup radioGroupGender;
+    private RadioButton radioButtonMale, radioButtonFemale, radioButtonOther;
 
     // Searchable Samaj Field
     private EditText samajSearchEditText;
@@ -108,6 +114,12 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         confirmPasswordEditText = findViewById(R.id.editTextText3);
         registerButton = findViewById(R.id.button3);
 
+        // Gender RadioGroup and RadioButtons
+        radioGroupGender = findViewById(R.id.radioGroupGender);
+        radioButtonMale = findViewById(R.id.radioButtonMale);
+        radioButtonFemale = findViewById(R.id.radioButtonFemale);
+        radioButtonOther = findViewById(R.id.radioButtonOther);
+
         dynamicFieldsLayout = findViewById(R.id.layoutDynamicFields);
         adminFieldsLayout = findViewById(R.id.layoutAdminFields);
         samajSearchLayout = findViewById(R.id.layoutSamajSearch);
@@ -146,11 +158,44 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         isCreatingNewSamaj = false;
         samajSelectionMade = false;
         samajSearchEditText.setText("");
+
+        // Clear gender selection
+        radioGroupGender.clearCheck();
     }
 
     private void setupClickListeners() {
         registerButton.setOnClickListener(v -> attemptRegistration());
         establishedDateEditText.setOnClickListener(v -> showDatePicker());
+    }
+
+    /**
+     * Get the selected gender from radio buttons
+     * @return Selected gender as String (MALE, FEMALE, OTHER) or null if none selected
+     */
+    private String getSelectedGender() {
+        int selectedId = radioGroupGender.getCheckedRadioButtonId();
+
+        if (selectedId == R.id.radioButtonMale) {
+            return "MALE";
+        } else if (selectedId == R.id.radioButtonFemale) {
+            return "FEMALE";
+        } else if (selectedId == R.id.radioButtonOther) {
+            return "OTHER";
+        }
+
+        return null; // No gender selected
+    }
+
+    /**
+     * Validate that a gender is selected
+     * @return true if gender is selected, false otherwise
+     */
+    private boolean validateGender() {
+        if (radioGroupGender.getCheckedRadioButtonId() == -1) {
+            Toast.makeText(this, "Please select your gender", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        return true;
     }
 
     private void setupSearchFunctionality() {
@@ -226,7 +271,6 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
             suggestionsRecyclerView.setVisibility(View.GONE);
             return;
         }
-
         // Search through available samajs
         filteredSamajs.clear();
         String lowerQuery = query.toLowerCase();
@@ -465,6 +509,11 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
             return false;
         }
 
+        // Validate gender selection
+        if (!validateGender()) {
+            return false;
+        }
+
         if (password.isEmpty()) {
             passwordEditText.setError("Password is required");
             passwordEditText.requestFocus();
@@ -536,7 +585,8 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         Log.d(TAG, "Validation passed - currentUserType: " + currentUserType +
                 ", isCreatingNewSamaj: " + isCreatingNewSamaj +
                 ", selectedSamaj: " + (selectedSamaj != null ? "exists" : "null") +
-                ", samajSelectionMade: " + samajSelectionMade);
+                ", samajSelectionMade: " + samajSelectionMade +
+                ", selectedGender: " + getSelectedGender());
 
         return true;
     }
@@ -570,6 +620,7 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
             samajData.put("adminName", nameEditText.getText().toString().trim());
             samajData.put("adminEmail", emailEditText.getText().toString().trim());
             samajData.put("adminPassword", passwordEditText.getText().toString());
+            samajData.put("adminGender", getSelectedGender()); // Include gender
 
         } catch (JSONException e) {
             Log.e(TAG, "Error creating samaj JSON", e);
@@ -636,6 +687,7 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         try {
             userData.put("name", nameEditText.getText().toString().trim());
             userData.put("email", emailEditText.getText().toString().trim());
+            userData.put("gender", getSelectedGender()); // Include gender
             userData.put("password", passwordEditText.getText().toString().trim());
             userData.put("isAdmin", currentUserType.equalsIgnoreCase("admin"));
 
@@ -668,7 +720,6 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
                             resetRegisterButton();
                             Toast.makeText(this, response.getString("message"), Toast.LENGTH_SHORT).show();
                         }
-
 
                     } catch (Exception e) {
                         Log.e(TAG, "Error parsing registration response", e);
