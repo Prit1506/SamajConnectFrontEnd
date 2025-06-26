@@ -161,6 +161,7 @@
                         </LinearLayout>
 
                         <LinearLayout
+                            android:id="@+id/membersLinearLayout"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_margin="12dp"
@@ -180,7 +181,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginBottom="4dp"
-                                android:text="Member"
+                                android:text="Members"
                                 android:textAlignment="center"
                                 android:textColor="@color/white"
                                 android:textStyle="bold|italic" />

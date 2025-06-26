@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:background="#f5f5f5"
+    tools:context=".MembersActivity"
+    android:id="@+id/main">
+
+    <!-- Navigation Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="#ffffff"
+        android:elevation="4dp">
+
+        <Button
+            android:id="@+id/btnFamilyTree"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="4dp"
+            android:text="Family Tree"
+            android:textSize="12sp"
+            android:background="@drawable/button_selector"
+            android:textColor="#ffffff" />
+
+        <Button
+            android:id="@+id/btnAddRelationship"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="4dp"
+            android:text="Add Relationship"
+            android:textSize="12sp"
+            android:background="@drawable/button_selector"
+            android:textColor="#ffffff" />
+
+        <Button
+            android:id="@+id/btnApproveRequests"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="4dp"
+            android:text="Approve Requests"
+            android:textSize="12sp"
+            android:background="@drawable/button_selector"
+            android:textColor="#ffffff" />
+
+    </LinearLayout>
+
+    <!-- Content Frame -->
+    <FrameLayout
+        android:id="@+id/contentFrame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="8dp" />
+
+</LinearLayout>

@@ -55,7 +55,7 @@ public class DashboardActivity extends AppCompatActivity {
 
     private TextView userNameTextView, samajNameTextView, profileTextView;
     private ImageView profileImageView;
-    private LinearLayout eventsLinearLayout, logoutLinearLayout;
+    private LinearLayout eventsLinearLayout, membersLinearLayout, logoutLinearLayout;
     private SwipeRefreshLayout swipeRefreshLayout;
     private ScrollView mainScrollView;
 
@@ -116,6 +116,7 @@ public class DashboardActivity extends AppCompatActivity {
         mainScrollView = findViewById(R.id.mainScrollView);
         profileTextView = findViewById(R.id.txtProfile);
         logoutLinearLayout = findViewById(R.id.logoutLinearLayout);
+        membersLinearLayout = findViewById(R.id.membersLinearLayout);
 
         eventsLinearLayout.setOnClickListener(view ->
                 startActivity(new Intent(DashboardActivity.this, EventActivity.class)));
@@ -123,6 +124,8 @@ public class DashboardActivity extends AppCompatActivity {
         profileImageView.setOnClickListener(view -> startActivity(new Intent(DashboardActivity.this, ProfileActivity.class)));
 
         profileTextView.setOnClickListener(view -> startActivity(new Intent(DashboardActivity.this, ProfileActivity.class)));
+
+        membersLinearLayout.setOnClickListener(view -> startActivity(new Intent(DashboardActivity.this, MembersActivity.class)));
 
         // Set up logout click listener
         logoutLinearLayout.setOnClickListener(view -> showLogoutDialog());
