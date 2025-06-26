@@ -599,6 +599,7 @@ public class MembersActivity extends AppCompatActivity {
                 }
         );
 
+        request.setRetryPolicy(new DefaultRetryPolicy(150000, 0, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         requestQueue.add(request);
     }
 
