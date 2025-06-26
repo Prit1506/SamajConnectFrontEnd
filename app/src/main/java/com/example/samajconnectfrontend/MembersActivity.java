@@ -36,6 +36,7 @@ public class MembersActivity extends AppCompatActivity {
 
     private static final String TAG = "MembersActivity";
     private static final String BASE_URL = "http://10.0.2.2:8080/api/family-tree";
+    private static final String USER_BASE_URL = "http://10.0.2.2:8080/api/users";
     private static final String PREFS_NAME = "SamajConnect";
     private static final String USER_ID_KEY = "user_id";
 
@@ -45,7 +46,9 @@ public class MembersActivity extends AppCompatActivity {
     private RequestQueue requestQueue;
     private ProgressDialog progressDialog;
     private SharedPreferences sharedPreferences;
-    private Long currentUserId;
+    private Long currentUserId; // The logged-in user
+    private Long currentTreeOwnerId; // The user whose tree we're currently viewing
+    private UserInfo currentTreeOwner; // Information about the tree owner
 
     // Current view state
     private String currentView = "family_tree";
@@ -74,7 +77,8 @@ public class MembersActivity extends AppCompatActivity {
 
         requestQueue = Volley.newRequestQueue(this);
         sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        currentUserId = sharedPreferences.getLong(USER_ID_KEY, 1L); // Default to 1 for demo
+        currentUserId = sharedPreferences.getLong(USER_ID_KEY, 1L); // The logged-in user
+        currentTreeOwnerId = currentUserId; // Initially viewing own tree
 
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Loading...");
@@ -84,6 +88,8 @@ public class MembersActivity extends AppCompatActivity {
     private void setupClickListeners() {
         btnFamilyTree.setOnClickListener(v -> {
             updateButtonStates("family_tree");
+            // Reset to viewing own tree when clicking Family Tree button
+            currentTreeOwnerId = currentUserId;
             loadFamilyTreeView();
         });
 
@@ -133,21 +139,115 @@ public class MembersActivity extends AppCompatActivity {
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // Load current user info and family tree
-        loadCurrentUserInfo(tvCurrentUser, ivCurrentUserProfile);
+        // Load tree owner info and family tree
+        loadTreeOwnerInfo(tvCurrentUser, ivCurrentUserProfile);
         loadFamilyTreeData(recyclerView);
     }
 
-    private void loadCurrentUserInfo(TextView tvCurrentUser, ImageView ivCurrentUserProfile) {
-        // For demo purposes, set current user info
-        tvCurrentUser.setText("Current User: You");
-        // You can load actual user data from your backend here
+    private void loadTreeOwnerInfo(TextView tvCurrentUser, ImageView ivCurrentUserProfile) {
+        // Load the tree owner's information
+        String url = USER_BASE_URL + "/" + currentTreeOwnerId;
+
+        Log.d(TAG, "Loading tree owner info for user ID: " + currentTreeOwnerId);
+
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+                response -> {
+                    try {
+                        Log.d(TAG, "Tree owner response: " + response.toString());
+
+                        if (response.getBoolean("success")) {
+                            JSONObject userData = response.getJSONObject("data");
+
+                            // Store tree owner info
+                            currentTreeOwner = new UserInfo();
+                            currentTreeOwner.userId = userData.getLong("id");
+                            currentTreeOwner.name = userData.getString("name");
+                            currentTreeOwner.email = userData.optString("email", "");
+
+                            Log.d(TAG, "Tree owner loaded: " + currentTreeOwner.name + " (ID: " + currentTreeOwner.userId + ")");
+
+                            // Handle profile image - check different possible field names
+                            boolean imageSet = false;
+
+                            // Try profileImg as byte array (from your backend structure)
+                            if (userData.has("profileImg") && !userData.isNull("profileImg")) {
+                                try {
+                                    // The profileImg field contains byte array data
+                                    JSONArray profileImgArray = userData.getJSONArray("profileImg");
+                                    byte[] imageBytes = new byte[profileImgArray.length()];
+                                    for (int i = 0; i < profileImgArray.length(); i++) {
+                                        imageBytes[i] = (byte) profileImgArray.getInt(i);
+                                    }
+
+                                    Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                                    if (bitmap != null) {
+                                        ivCurrentUserProfile.setImageBitmap(bitmap);
+                                        imageSet = true;
+                                        Log.d(TAG, "Profile image set from profileImg byte array");
+                                    }
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Error processing profileImg byte array", e);
+                                }
+                            }
+
+                            // Try profileImg as base64 string
+                            if (!imageSet && userData.has("profileImg") && !userData.isNull("profileImg")) {
+                                try {
+                                    String base64Image = userData.getString("profileImg");
+                                    if (base64Image != null && !base64Image.isEmpty()) {
+                                        byte[] decodedString = Base64.decode(base64Image, Base64.DEFAULT);
+                                        Bitmap bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                                        if (bitmap != null) {
+                                            ivCurrentUserProfile.setImageBitmap(bitmap);
+                                            imageSet = true;
+                                            Log.d(TAG, "Profile image set from profileImg base64 string");
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Error processing profileImg base64 string", e);
+                                }
+                            }
+
+                            // If no image was set, use placeholder
+                            if (!imageSet) {
+                                ivCurrentUserProfile.setImageResource(R.drawable.ic_person_placeholder);
+                                Log.d(TAG, "Using placeholder image for tree owner");
+                            }
+
+                            // Set the text based on whether we're viewing our own tree or someone else's
+                            if (currentTreeOwnerId.equals(currentUserId)) {
+                                tvCurrentUser.setText(currentTreeOwner.name + " (You)");
+                                Log.d(TAG, "Displaying own tree");
+                            } else {
+                                tvCurrentUser.setText(currentTreeOwner.name);
+                                Log.d(TAG, "Displaying " + currentTreeOwner.name + "'s tree");
+                            }
+
+                        } else {
+                            Log.e(TAG, "Failed to load tree owner info: " + response.getString("message"));
+                            tvCurrentUser.setText("Unknown User");
+                            ivCurrentUserProfile.setImageResource(R.drawable.ic_person_placeholder);
+                        }
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Error parsing tree owner data", e);
+                        tvCurrentUser.setText("Unknown User");
+                        ivCurrentUserProfile.setImageResource(R.drawable.ic_person_placeholder);
+                    }
+                },
+                error -> {
+                    Log.e(TAG, "Error loading tree owner info", error);
+                    tvCurrentUser.setText("Unknown User");
+                    ivCurrentUserProfile.setImageResource(R.drawable.ic_person_placeholder);
+                }
+        );
+
+        requestQueue.add(request);
     }
 
     private void loadFamilyTreeData(RecyclerView recyclerView) {
         progressDialog.show();
 
-        String url = BASE_URL + "/user/" + currentUserId;
+        String url = BASE_URL + "/user/" + currentTreeOwnerId;
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
@@ -155,6 +255,13 @@ public class MembersActivity extends AppCompatActivity {
                     try {
                         if (response.getBoolean("success")) {
                             JSONObject data = response.getJSONObject("data");
+
+                            // Also update tree owner info from family tree response if available
+                            if (data.has("rootUser")) {
+                                JSONObject rootUser = data.getJSONObject("rootUser");
+                                updateTreeOwnerFromRootUser(rootUser);
+                            }
+
                             List<FamilyMember> familyMembers = parseFamilyTreeData(data);
 
                             FamilyTreeAdapter adapter = new FamilyTreeAdapter(familyMembers, this::onFamilyMemberClick, this::onFamilyMemberLongClick);
@@ -177,6 +284,40 @@ public class MembersActivity extends AppCompatActivity {
         requestQueue.add(request);
     }
 
+    private void updateTreeOwnerFromRootUser(JSONObject rootUser) {
+        try {
+            // Update the UI with root user info if we have the views
+            TextView tvCurrentUser = findViewById(R.id.tvCurrentUser);
+            ImageView ivCurrentUserProfile = findViewById(R.id.ivCurrentUserProfile);
+
+            if (tvCurrentUser != null && ivCurrentUserProfile != null) {
+                String name = rootUser.getString("name");
+
+                // Set the text
+                if (currentTreeOwnerId.equals(currentUserId)) {
+                    tvCurrentUser.setText(name + " (You)");
+                } else {
+                    tvCurrentUser.setText(name);
+                }
+
+                // Set profile image if available
+                if (rootUser.has("profileImageBase64") && !rootUser.isNull("profileImageBase64")) {
+                    try {
+                        String base64Image = rootUser.getString("profileImageBase64");
+                        byte[] decodedString = Base64.decode(base64Image, Base64.DEFAULT);
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                        ivCurrentUserProfile.setImageBitmap(bitmap);
+                        Log.d(TAG, "Updated tree owner image from rootUser");
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error decoding rootUser profile image", e);
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Error updating tree owner from rootUser", e);
+        }
+    }
+
     private List<FamilyMember> parseFamilyTreeData(JSONObject data) throws JSONException {
         List<FamilyMember> familyMembers = new ArrayList<>();
 
@@ -196,6 +337,9 @@ public class MembersActivity extends AppCompatActivity {
                     familyMember.relationshipDisplayName = member.optString("relationshipDisplayName", "");
                     familyMember.generationLevel = member.optInt("generationLevel", 0);
                     familyMember.generationName = member.optString("generationName", "");
+
+                    // Mark if this is the logged-in user viewing someone else's tree
+                    familyMember.isCurrentLoggedInUser = familyMember.userId.equals(currentUserId) && !currentTreeOwnerId.equals(currentUserId);
 
                     if (member.has("profileImageBase64") && !member.isNull("profileImageBase64")) {
                         familyMember.profileImageBase64 = member.getString("profileImageBase64");
@@ -220,40 +364,11 @@ public class MembersActivity extends AppCompatActivity {
     }
 
     private void loadSpecificUserFamilyTree(Long userId) {
-        progressDialog.show();
+        // Update the current tree owner
+        currentTreeOwnerId = userId;
 
-        String url = BASE_URL + "/user/" + userId;
-
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
-                response -> {
-                    progressDialog.dismiss();
-                    try {
-                        if (response.getBoolean("success")) {
-                            JSONObject data = response.getJSONObject("data");
-                            List<FamilyMember> familyMembers = parseFamilyTreeData(data);
-
-                            // Update the RecyclerView with new data
-                            RecyclerView recyclerView = findViewById(R.id.recyclerViewFamilyTree);
-                            if (recyclerView != null) {
-                                FamilyTreeAdapter adapter = new FamilyTreeAdapter(familyMembers, this::onFamilyMemberClick, this::onFamilyMemberLongClick);
-                                recyclerView.setAdapter(adapter);
-                            }
-                        } else {
-                            showError("Failed to load family tree: " + response.getString("message"));
-                        }
-                    } catch (JSONException e) {
-                        Log.e(TAG, "Error parsing family tree data", e);
-                        showError("Error parsing family tree data");
-                    }
-                },
-                error -> {
-                    progressDialog.dismiss();
-                    Log.e(TAG, "Error loading family tree", error);
-                    showError("Error loading family tree: " + error.getMessage());
-                }
-        );
-
-        requestQueue.add(request);
+        // Reload the family tree view with the new tree owner
+        loadFamilyTreeView();
     }
 
     private void showUserDetailsDialog(FamilyMember member) {
@@ -266,7 +381,13 @@ public class MembersActivity extends AppCompatActivity {
         TextView tvRelationship = dialogView.findViewById(R.id.tvRelationshipDialog);
         TextView tvGeneration = dialogView.findViewById(R.id.tvGenerationDialog);
 
-        tvName.setText(member.name);
+        // Add "(You)" if this is the logged-in user
+        String displayName = member.name;
+        if (member.isCurrentLoggedInUser) {
+            displayName += " (You)";
+        }
+
+        tvName.setText(displayName);
         tvEmail.setText(member.email);
         tvRelationship.setText("Relationship: " + member.relationshipDisplayName);
         tvGeneration.setText("Generation: " + member.generationName);
@@ -294,7 +415,8 @@ public class MembersActivity extends AppCompatActivity {
                 .show();
     }
 
-    // ==================== ADD RELATIONSHIP VIEW ====================
+    // ==================== REST OF THE CODE REMAINS THE SAME ====================
+    // ... (keeping all your existing methods for add relationship, approve requests, etc.)
 
     private void loadAddRelationshipView() {
         View addRelationshipView = LayoutInflater.from(this).inflate(R.layout.view_add_relationship, null);
@@ -364,8 +486,6 @@ public class MembersActivity extends AppCompatActivity {
         requestQueue.add(request);
     }
 
-    // Add this updated method to your MainActivity class
-
     private void searchUsers(String query, RecyclerView recyclerView) {
         progressDialog.show();
 
@@ -429,154 +549,10 @@ public class MembersActivity extends AppCompatActivity {
         requestQueue.add(request);
     }
 
-    // Add this new data class for samaj members
-    public static class SamajMember {
-        public Long userId;
-        public String name;
-        public String email;
-        public String gender;
-        public String phoneNumber;
-        public String relationshipStatus;
-        public String relationshipStatusText;
-        public String profileImageBase64;
-        public boolean isSelected = false;
-    }
-
-    // Add this new adapter for samaj member search
-    public static class SamajMemberSearchAdapter extends RecyclerView.Adapter<SamajMemberSearchAdapter.ViewHolder> {
-        private List<SamajMember> members;
-        private OnSamajMemberSelectedListener listener;
-        private int selectedPosition = -1;
-
-        public interface OnSamajMemberSelectedListener {
-            void onMemberSelected(SamajMember member);
-        }
-
-        public SamajMemberSearchAdapter(List<SamajMember> members, OnSamajMemberSelectedListener listener) {
-            this.members = members;
-            this.listener = listener;
-        }
-
-        @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_samaj_member_search, parent, false);
-            return new ViewHolder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(ViewHolder holder, int position) {
-            SamajMember member = members.get(position);
-            holder.bind(member, position);
-        }
-
-        @Override
-        public int getItemCount() {
-            return members.size();
-        }
-
-        public class ViewHolder extends RecyclerView.ViewHolder {
-            private ImageView ivProfile;
-            private TextView tvName;
-            private TextView tvEmail;
-            private TextView tvGender;
-            private Button btnAction;
-
-            public ViewHolder(View itemView) {
-                super(itemView);
-                ivProfile = itemView.findViewById(R.id.ivProfile);
-                tvName = itemView.findViewById(R.id.tvName);
-                tvEmail = itemView.findViewById(R.id.tvEmail);
-                tvGender = itemView.findViewById(R.id.tvGender);
-                btnAction = itemView.findViewById(R.id.btnAction);
-            }
-
-            public void bind(SamajMember member, int position) {
-                tvName.setText(member.name);
-                tvEmail.setText(member.email);
-                tvGender.setText("Gender: " + member.gender);
-
-                // Set profile image
-                if (member.profileImageBase64 != null && !member.profileImageBase64.isEmpty()) {
-                    try {
-                        byte[] decodedString = Base64.decode(member.profileImageBase64, Base64.DEFAULT);
-                        Bitmap bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-                        ivProfile.setImageBitmap(bitmap);
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error decoding profile image", e);
-                        ivProfile.setImageResource(R.drawable.ic_person_placeholder);
-                    }
-                } else {
-                    ivProfile.setImageResource(R.drawable.ic_person_placeholder);
-                }
-
-                // Set button state based on relationship status
-                setupActionButton(member, position);
-            }
-
-            private void setupActionButton(SamajMember member, int position) {
-                switch (member.relationshipStatus) {
-                    case "AVAILABLE":
-                        if (selectedPosition == position) {
-                            btnAction.setText("Selected");
-                            //btnAction.setBackgroundColor(getResources().getColor(android.R.color.holo_green_light));
-                            btnAction.setEnabled(true);
-                        } else {
-                            btnAction.setText("Select");
-                            //btnAction.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light));
-                            btnAction.setEnabled(true);
-                        }
-                        btnAction.setOnClickListener(v -> {
-                            if (selectedPosition != position) {
-                                int oldPosition = selectedPosition;
-                                selectedPosition = position;
-
-                                // Notify changes
-                                if (oldPosition != -1) {
-                                    notifyItemChanged(oldPosition);
-                                }
-                                notifyItemChanged(position);
-
-                                if (listener != null) {
-                                    listener.onMemberSelected(member);
-                                }
-                            }
-                        });
-                        break;
-
-                    case "ALREADY_RELATED":
-                        btnAction.setText("Already Related");
-                        //btnAction.setBackgroundColor(getResources().getColor(android.R.color.darker_gray));
-                        btnAction.setEnabled(false);
-                        break;
-
-                    case "REQUEST_SENT":
-                        btnAction.setText("Request Sent");
-                        //btnAction.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_light));
-                        btnAction.setEnabled(false);
-                        break;
-
-                    case "REQUEST_RECEIVED":
-                        btnAction.setText("Request Received");
-                        //btnAction.setBackgroundColor(getResources().getColor(android.R.color.holo_purple));
-                        btnAction.setEnabled(false);
-                        break;
-
-                    default:
-                        btnAction.setText("Unknown");
-                        //btnAction.setBackgroundColor(getResources().getColor(android.R.color.darker_gray));
-                        btnAction.setEnabled(false);
-                        break;
-                }
-            }
-        }
-    }
-
-    // Update the callback method
     private void onSamajMemberSelected(SamajMember member) {
         selectedUserId = member.userId;
         Toast.makeText(this, "Selected: " + member.name, Toast.LENGTH_SHORT).show();
     }
-
 
     private void onUserSelected(FamilyMember user) {
         selectedUserId = user.userId;
@@ -625,8 +601,6 @@ public class MembersActivity extends AppCompatActivity {
 
         requestQueue.add(request);
     }
-
-    // ==================== APPROVE REQUESTS VIEW ====================
 
     private void loadApproveRequestsView() {
         View approveRequestsView = LayoutInflater.from(this).inflate(R.layout.view_approve_requests, null);
@@ -731,13 +705,18 @@ public class MembersActivity extends AppCompatActivity {
         requestQueue.add(request);
     }
 
-    // ==================== UTILITY METHODS ====================
-
     private void showError(String message) {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
     // ==================== DATA CLASSES ====================
+
+    public static class UserInfo {
+        public Long userId;
+        public String name;
+        public String email;
+        public String profileImageBase64;
+    }
 
     public static class FamilyMember {
         public Long userId;
@@ -747,6 +726,19 @@ public class MembersActivity extends AppCompatActivity {
         public Integer generationLevel;
         public String generationName;
         public String profileImageBase64;
+        public boolean isCurrentLoggedInUser = false;
+    }
+
+    public static class SamajMember {
+        public Long userId;
+        public String name;
+        public String email;
+        public String gender;
+        public String phoneNumber;
+        public String relationshipStatus;
+        public String relationshipStatusText;
+        public String profileImageBase64;
+        public boolean isSelected = false;
     }
 
     public static class RelationshipRequest {
@@ -826,7 +818,13 @@ public class MembersActivity extends AppCompatActivity {
             }
 
             public void bind(FamilyMember member) {
-                tvName.setText(member.name);
+                // Add "(You)" to the name if this is the logged-in user viewing someone else's tree
+                String displayName = member.name;
+                if (member.isCurrentLoggedInUser) {
+                    displayName += " (You)";
+                }
+
+                tvName.setText(displayName);
                 tvRelationship.setText(member.relationshipDisplayName);
                 tvGeneration.setText(member.generationName);
 
@@ -841,6 +839,129 @@ public class MembersActivity extends AppCompatActivity {
                     }
                 } else {
                     ivProfile.setImageResource(R.drawable.ic_person_placeholder);
+                }
+            }
+        }
+    }
+
+    // ... (rest of your adapters remain the same)
+    public static class SamajMemberSearchAdapter extends RecyclerView.Adapter<SamajMemberSearchAdapter.ViewHolder> {
+        private List<SamajMember> members;
+        private OnSamajMemberSelectedListener listener;
+        private int selectedPosition = -1;
+
+        public interface OnSamajMemberSelectedListener {
+            void onMemberSelected(SamajMember member);
+        }
+
+        public SamajMemberSearchAdapter(List<SamajMember> members, OnSamajMemberSelectedListener listener) {
+            this.members = members;
+            this.listener = listener;
+        }
+
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_samaj_member_search, parent, false);
+            return new ViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            SamajMember member = members.get(position);
+            holder.bind(member, position);
+        }
+
+        @Override
+        public int getItemCount() {
+            return members.size();
+        }
+
+        public class ViewHolder extends RecyclerView.ViewHolder {
+            private ImageView ivProfile;
+            private TextView tvName;
+            private TextView tvEmail;
+            private TextView tvGender;
+            private Button btnAction;
+
+            public ViewHolder(View itemView) {
+                super(itemView);
+                ivProfile = itemView.findViewById(R.id.ivProfile);
+                tvName = itemView.findViewById(R.id.tvName);
+                tvEmail = itemView.findViewById(R.id.tvEmail);
+                tvGender = itemView.findViewById(R.id.tvGender);
+                btnAction = itemView.findViewById(R.id.btnAction);
+            }
+
+            public void bind(SamajMember member, int position) {
+                tvName.setText(member.name);
+                tvEmail.setText(member.email);
+                tvGender.setText("Gender: " + member.gender);
+
+                // Set profile image
+                if (member.profileImageBase64 != null && !member.profileImageBase64.isEmpty()) {
+                    try {
+                        byte[] decodedString = Base64.decode(member.profileImageBase64, Base64.DEFAULT);
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                        ivProfile.setImageBitmap(bitmap);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error decoding profile image", e);
+                        ivProfile.setImageResource(R.drawable.ic_person_placeholder);
+                    }
+                } else {
+                    ivProfile.setImageResource(R.drawable.ic_person_placeholder);
+                }
+
+                // Set button state based on relationship status
+                setupActionButton(member, position);
+            }
+
+            private void setupActionButton(SamajMember member, int position) {
+                switch (member.relationshipStatus) {
+                    case "AVAILABLE":
+                        if (selectedPosition == position) {
+                            btnAction.setText("Selected");
+                            btnAction.setEnabled(true);
+                        } else {
+                            btnAction.setText("Select");
+                            btnAction.setEnabled(true);
+                        }
+                        btnAction.setOnClickListener(v -> {
+                            if (selectedPosition != position) {
+                                int oldPosition = selectedPosition;
+                                selectedPosition = position;
+
+                                // Notify changes
+                                if (oldPosition != -1) {
+                                    notifyItemChanged(oldPosition);
+                                }
+                                notifyItemChanged(position);
+
+                                if (listener != null) {
+                                    listener.onMemberSelected(member);
+                                }
+                            }
+                        });
+                        break;
+
+                    case "ALREADY_RELATED":
+                        btnAction.setText("Already Related");
+                        btnAction.setEnabled(false);
+                        break;
+
+                    case "REQUEST_SENT":
+                        btnAction.setText("Request Sent");
+                        btnAction.setEnabled(false);
+                        break;
+
+                    case "REQUEST_RECEIVED":
+                        btnAction.setText("Request Received");
+                        btnAction.setEnabled(false);
+                        break;
+
+                    default:
+                        btnAction.setText("Unknown");
+                        btnAction.setEnabled(false);
+                        break;
                 }
             }
         }
