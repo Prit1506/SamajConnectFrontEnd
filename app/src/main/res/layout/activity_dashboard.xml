@@ -63,7 +63,7 @@
                                 android:layout_height="match_parent"
                                 android:contentDescription="Profile Image"
                                 android:scaleType="centerCrop"
-                                android:src="@drawable/profile" />
+                                android:src="@drawable/ic_person_placeholder" />
 
                         </androidx.cardview.widget.CardView>
 

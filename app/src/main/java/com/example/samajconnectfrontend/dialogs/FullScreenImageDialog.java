@@ -27,15 +27,44 @@ public class FullScreenImageDialog extends Dialog {
     private Context context;
     private Event event;
 
+    // New variables for profile image support
+    private String base64Image;
+    private Bitmap profileBitmap;
+    private int defaultImageResource;
+
     // UI Elements
     private PhotoView photoView;
     private ImageView closeButton;
     private View dialogView;
 
+    // Constructor for Event images (existing functionality)
     public FullScreenImageDialog(@NonNull Context context, Event event) {
         super(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
         this.context = context;
         this.event = event;
+        this.defaultImageResource = R.drawable.logo_banner;
+
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        initializeDialog();
+    }
+
+    // New constructor for profile images (Base64)
+    public FullScreenImageDialog(@NonNull Context context, String base64Image, int defaultImageResource) {
+        super(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        this.context = context;
+        this.base64Image = base64Image;
+        this.defaultImageResource = defaultImageResource;
+
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        initializeDialog();
+    }
+
+    // New constructor for profile images (Bitmap)
+    public FullScreenImageDialog(@NonNull Context context, Bitmap bitmap, int defaultImageResource) {
+        super(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        this.context = context;
+        this.profileBitmap = bitmap;
+        this.defaultImageResource = defaultImageResource;
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         initializeDialog();
@@ -52,7 +81,17 @@ public class FullScreenImageDialog extends Dialog {
 
         initializeViews(dialogView);
         setupClickListeners();
-        loadEventImage();
+
+        // Load appropriate image based on constructor used
+        if (event != null) {
+            loadEventImage();
+        } else if (profileBitmap != null) {
+            loadBitmapImage();
+        } else if (base64Image != null) {
+            loadBase64Image();
+        } else {
+            loadDefaultImage();
+        }
     }
 
     private void initializeViews(View dialogView) {
@@ -71,11 +110,55 @@ public class FullScreenImageDialog extends Dialog {
         }
     }
 
+    private void loadBitmapImage() {
+        if (profileBitmap != null && photoView != null) {
+            photoView.setImageBitmap(profileBitmap);
+            Log.d(TAG, "Successfully loaded bitmap image");
+        } else {
+            loadDefaultImage();
+        }
+    }
+
+    private void loadBase64Image() {
+        if (base64Image != null && !base64Image.isEmpty() && photoView != null) {
+            try {
+                // Remove data URL prefix if present
+                String cleanBase64 = base64Image;
+                if (base64Image.startsWith("data:image")) {
+                    cleanBase64 = base64Image.substring(base64Image.indexOf(",") + 1);
+                }
+
+                byte[] decodedString = Base64.decode(cleanBase64, Base64.DEFAULT);
+                Bitmap decodedBitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+
+                if (decodedBitmap != null) {
+                    photoView.setImageBitmap(decodedBitmap);
+                    Log.d(TAG, "Successfully loaded Base64 image");
+                    return;
+                } else {
+                    Log.e(TAG, "Decoded bitmap is null");
+                }
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Failed to decode base64 image", e);
+            } catch (Exception e) {
+                Log.e(TAG, "Error processing base64 image", e);
+            }
+        }
+
+        // Fallback to default if Base64 loading fails
+        loadDefaultImage();
+    }
+
+    private void loadDefaultImage() {
+        if (photoView != null) {
+            photoView.setImageResource(defaultImageResource);
+            Log.d(TAG, "Loading default image");
+        }
+    }
+
     private void loadEventImage() {
         if (event == null || photoView == null) {
-            if (photoView != null) {
-                photoView.setImageResource(R.drawable.logo_banner);
-            }
+            loadDefaultImage();
             return;
         }
 
@@ -116,17 +199,16 @@ public class FullScreenImageDialog extends Dialog {
                 Glide.with(context)
                         .load(imageUrl)
                         .apply(new RequestOptions()
-                                .placeholder(R.drawable.logo_banner)
-                                .error(R.drawable.logo_banner))
+                                .placeholder(defaultImageResource)
+                                .error(defaultImageResource))
                         .into(photoView);
             } catch (Exception e) {
                 Log.e(TAG, "Error loading image with Glide", e);
-                photoView.setImageResource(R.drawable.logo_banner);
+                loadDefaultImage();
             }
         } else {
             // Load default image
-            Log.d(TAG, "Loading default image");
-            photoView.setImageResource(R.drawable.logo_banner);
+            loadDefaultImage();
         }
     }
 }

@@ -37,6 +37,8 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 
+import com.example.samajconnectfrontend.dialogs.FullScreenImageDialog;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -53,7 +55,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     // UI Components
     private ImageView profileImage, backArrow;
-    private TextView emailTextView, adminStatusTextView, samajIdTextView;
+    private TextView emailTextView, adminStatusTextView, samajIdTextView, genderTextView;
     private EditText nameEditText, addressEditText, phoneEditText;
     private Button changeImageButton, saveButton, forgotPasswordButton;
 
@@ -63,6 +65,10 @@ public class ProfileActivity extends AppCompatActivity {
     private String baseUrl = "http://10.0.2.2:8080/api"; // Replace with your server URL
     private boolean hasImageChanged = false;
     private String encodedImageString = "";
+
+    // Variables to store current profile image data for fullscreen display
+    private String currentProfileImageBase64 = "";
+    private Bitmap currentProfileBitmap = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,6 +112,7 @@ public class ProfileActivity extends AppCompatActivity {
         changeImageButton = findViewById(R.id.change_image_button);
         saveButton = findViewById(R.id.save_button);
         forgotPasswordButton = findViewById(R.id.forgot_password_button);
+        genderTextView = findViewById(R.id.gender_text_view);
     }
 
     private void setupClickListeners() {
@@ -116,6 +123,27 @@ public class ProfileActivity extends AppCompatActivity {
         changeImageButton.setOnClickListener(v -> showImagePickerDialog());
         saveButton.setOnClickListener(v -> saveProfile());
         forgotPasswordButton.setOnClickListener(v -> openForgotPasswordActivity());
+
+        // Add click listener to profile image for fullscreen view
+        profileImage.setOnClickListener(v -> showFullScreenImage());
+    }
+
+    private void showFullScreenImage() {
+        FullScreenImageDialog dialog;
+
+        // Priority: Current bitmap > Base64 > Default image
+        if (currentProfileBitmap != null) {
+            // Use current bitmap (from gallery/camera selection)
+            dialog = new FullScreenImageDialog(this, currentProfileBitmap, R.drawable.profile);
+        } else if (currentProfileImageBase64 != null && !currentProfileImageBase64.isEmpty()) {
+            // Use Base64 image (from server)
+            dialog = new FullScreenImageDialog(this, currentProfileImageBase64, R.drawable.profile);
+        } else {
+            // Show default image in fullscreen
+            dialog = new FullScreenImageDialog(this, (String) null, R.drawable.profile);
+        }
+
+        dialog.show();
     }
 
     private void loadUserProfile() {
@@ -162,7 +190,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Populate non-editable fields
         emailTextView.setText(userData.optString("email", ""));
-
+        genderTextView.setText(userData.optString("gender", ""));
         boolean isAdmin = userData.optBoolean("isAdmin", false);
         adminStatusTextView.setText(isAdmin ? "Admin" : "Member");
 
@@ -177,9 +205,12 @@ public class ProfileActivity extends AppCompatActivity {
         // Load profile image
         if (userData.has("profileImg") && !userData.isNull("profileImg")) {
             String base64Image = userData.getString("profileImg");
+            currentProfileImageBase64 = base64Image; // Store for fullscreen display
             loadImageFromBase64(base64Image);
         } else {
             // Set default profile image
+            currentProfileImageBase64 = ""; // Clear base64 data
+            currentProfileBitmap = null; // Clear bitmap data
             profileImage.setImageResource(R.drawable.profile);
         }
     }
@@ -192,6 +223,7 @@ public class ProfileActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(TAG, "Error decoding image: " + e.getMessage());
             profileImage.setImageResource(R.drawable.profile);
+            currentProfileImageBase64 = ""; // Clear on error
         }
     }
 
@@ -276,6 +308,11 @@ public class ProfileActivity extends AppCompatActivity {
                 profileImage.setImageBitmap(bitmap);
                 encodedImageString = encodeImageToBase64(bitmap);
                 hasImageChanged = true;
+
+                // Store current bitmap for fullscreen display
+                currentProfileBitmap = bitmap;
+                currentProfileImageBase64 = ""; // Clear base64 since we have new bitmap
+
                 Log.d(TAG, "Image selected and encoded");
                 Log.d(TAG, "Encoded Image Length: " + encodedImageString.length());
                 Log.d(TAG, "Has Image Changed: " + hasImageChanged);
@@ -340,6 +377,11 @@ public class ProfileActivity extends AppCompatActivity {
                         if (response.getBoolean("success")) {
                             Toast.makeText(ProfileActivity.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
                             hasImageChanged = false; // Reset flag
+
+                            // Update stored data for fullscreen display
+                            if (currentProfileBitmap != null) {
+                                currentProfileImageBase64 = encodedImageString;
+                            }
                         } else {
                             String message = response.getString("message");
                             Toast.makeText(ProfileActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
