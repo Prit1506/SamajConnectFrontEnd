@@ -28,7 +28,7 @@
             android:layout_height="wrap_content"
             android:text="Relationship"
             android:textSize="14sp"
-            android:textColor="#666666"
+            android:textColor="#3A3A3A"
             android:layout_marginTop="4dp" />
 
         <TextView
@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:text="Message"
             android:textSize="14sp"
-            android:textColor="#666666"
+            android:textColor="#3A3A3A"
             android:layout_marginTop="8dp" />
 
         <TextView
@@ -45,8 +45,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Date"
-            android:textSize="12sp"
-            android:textColor="#999999"
+            android:textSize="13sp"
+            android:textColor="#3A3A3A"
             android:layout_marginTop="8dp" />
 
         <LinearLayout

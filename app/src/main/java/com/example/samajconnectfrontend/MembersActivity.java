@@ -968,8 +968,9 @@ public class MembersActivity extends AppCompatActivity {
 
             public void bind(RelationshipRequest request) {
                 tvRequesterName.setText(request.requesterName);
-                tvRelationship.setText("Wants to be your: " + request.relationshipDisplayName);
-                tvMessage.setText(request.requestMessage);
+                tvRelationship.setText("Your " + request.relationshipDisplayName);
+
+                tvMessage.setText(request.requestMessage != null ? request.requestMessage : "No message provided.");
                 tvDate.setText(request.createdAt);
 
                 btnApprove.setOnClickListener(v -> {
