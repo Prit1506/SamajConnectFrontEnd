@@ -24,6 +24,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ScrollView;
+import android.widget.EditText;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.PagerSnapHelper;
@@ -39,6 +40,7 @@ import com.example.samajconnectfrontend.models.Event;
 import com.example.samajconnectfrontend.models.EventResponse;
 import com.example.samajconnectfrontend.models.Samaj;
 import com.example.samajconnectfrontend.models.SamajResponse;
+import com.example.samajconnectfrontend.models.DetailedUserDto;
 import com.google.gson.Gson;
 
 import org.json.JSONObject;
@@ -51,7 +53,7 @@ import android.graphics.BitmapFactory;
 import android.util.Base64;
 import androidx.appcompat.app.AlertDialog;
 
-public class DashboardActivity extends AppCompatActivity {
+public class DashboardActivity extends AppCompatActivity implements SearchManager.SearchCallback {
 
     private TextView userNameTextView, samajNameTextView, profileTextView;
     private ImageView profileImageView;
@@ -81,6 +83,9 @@ public class DashboardActivity extends AppCompatActivity {
     private static final float MAX_SWIPE_TIME = 500; // Maximum time for swipe in milliseconds
     private long swipeStartTime;
 
+    // Search functionality
+    private SearchManager searchManager;
+
     private static final String USER_URL = "http://10.0.2.2:8080/api/users/";
     private static final String EVENT_URL = "http://10.0.2.2:8080/api/events/";
     private static final String BASE_URL = "http://10.0.2.2:8080/api/";
@@ -103,6 +108,7 @@ public class DashboardActivity extends AppCompatActivity {
         setupTouchListeners();
         setupRecyclerView();
         setupAutoScroll();
+        setupSearchFunctionality();
         loadAllData();
     }
 
@@ -129,6 +135,43 @@ public class DashboardActivity extends AppCompatActivity {
 
         // Set up logout click listener
         logoutLinearLayout.setOnClickListener(view -> showLogoutDialog());
+    }
+
+    private void setupSearchFunctionality() {
+        EditText searchEditText = findViewById(R.id.editTextText4);
+        LinearLayout searchResultsContainer = findViewById(R.id.searchResultsContainer);
+        RecyclerView searchResultsRecyclerView = findViewById(R.id.searchResultsRecyclerView);
+        TextView searchResultsTitle = findViewById(R.id.searchResultsTitle);
+
+        searchManager = new SearchManager(
+                this,
+                requestQueue,
+                searchEditText,
+                searchResultsContainer,
+                searchResultsRecyclerView,
+                searchResultsTitle,
+                mainScrollView,
+                this
+        );
+
+        searchManager.setupSearch();
+    }
+
+    // SearchManager.SearchCallback implementation
+    @Override
+    public Long getCurrentSamajId() {
+        return currentSamajId;
+    }
+
+    @Override
+    public String getAuthToken() {
+        SharedPreferences sharedPrefs = getSharedPreferences("SamajConnect", MODE_PRIVATE);
+        return sharedPrefs.getString("auth_token", "");
+    }
+
+    @Override
+    public void onMemberClicked(DetailedUserDto member) {
+        searchManager.showMemberDetails(member);
     }
 
     private void showLogoutDialog() {
@@ -172,11 +215,6 @@ public class DashboardActivity extends AppCompatActivity {
             Log.e("DashboardActivity", "Error during logout: " + e.getMessage());
             Toast.makeText(this, "Error during logout", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    // Alternative logout method without dialog (if you want direct logout)
-    private void performDirectLogout() {
-        performLogout();
     }
 
     private void setupSwipeRefresh() {
@@ -306,11 +344,6 @@ public class DashboardActivity extends AppCompatActivity {
         // Add snap behavior for better positioning (each item snaps to center)
         PagerSnapHelper snapHelper = new PagerSnapHelper();
         snapHelper.attachToRecyclerView(eventsRecyclerView);
-
-        // Set click listener for events
-//        eventSliderAdapter.setOnEventClickListener(event -> {
-//            Toast.makeText(this, "Clicked: " + event.getEventTitle(), Toast.LENGTH_SHORT).show();
-//        });
 
         // Add scroll listener to handle user interaction
         eventsRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -738,7 +771,7 @@ public class DashboardActivity extends AppCompatActivity {
                 }
             } else {
                 Toast.makeText(this, "No events found", Toast.LENGTH_SHORT).show();
-                Log.d("DashboardActivity", "No events found in response");// Complete the handleEventsResponse method (add this to complete the method in your first document)
+                Log.d("DashboardActivity", "No events found in response");
                 onDataLoadComplete();
             }
 
@@ -774,9 +807,6 @@ public class DashboardActivity extends AppCompatActivity {
 
         // Handle calendar permissions
         if (requestCode == 1001) { // CALENDAR_PERMISSION_REQUEST_CODE
-            // You can create a static method in CalendarReminderHelper to handle this
-            // or pass the result to your adapter if needed
-
             boolean allGranted = true;
             for (int result : grantResults) {
                 if (result != PackageManager.PERMISSION_GRANTED) {
@@ -814,6 +844,11 @@ public class DashboardActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Clean up search manager
+        if (searchManager != null) {
+            searchManager.cleanup();
+        }
+
         // Clean up handler to prevent memory leaks
         stopAutoScroll();
         if (autoScrollHandler != null) {
@@ -824,65 +859,10 @@ public class DashboardActivity extends AppCompatActivity {
         Log.d("DashboardActivity", "Activity destroyed - auto-scroll cleaned up");
     }
 
-    // Add this method to handle back button press (optional - for logout confirmation)
     @SuppressLint("MissingSuperCall")
     @Override
     public void onBackPressed() {
         // Show logout dialog when back button is pressed
         showLogoutDialog();
     }
-
-    // Additional logout helper methods (if you want more logout options)
-    private void showLogoutConfirmation() {
-        new AlertDialog.Builder(this)
-                .setTitle("Exit App")
-                .setMessage("Do you want to logout and exit the app?")
-                .setPositiveButton("Logout", (dialog, which) -> performLogout())
-                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
-                .setNeutralButton("Minimize", (dialog, which) -> {
-                    // Just minimize the app without logout
-                    moveTaskToBack(true);
-                })
-                .setIcon(R.drawable.ic_logout)
-                .show();
-    }
-
-    // Method to clear specific user data (alternative to clearing all)
-    private void clearUserData() {
-        SharedPreferences sharedPrefs = getSharedPreferences("SamajConnect", MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPrefs.edit();
-
-        // Clear only user-specific data, keep app settings if any
-        editor.remove("user_name");
-        editor.remove("user_email");
-        editor.remove("user_id");
-        editor.remove("auth_token");
-        editor.remove("samaj_id");
-        editor.remove("is_admin");
-
-        editor.apply();
-
-        Log.d("DashboardActivity", "User data cleared from SharedPreferences");
-    }
-
-    // Method to check if user is still logged in (call this in onResume if needed)
-    private boolean isUserLoggedIn() {
-        SharedPreferences sharedPrefs = getSharedPreferences("SamajConnect", MODE_PRIVATE);
-        String authToken = sharedPrefs.getString("auth_token", "");
-        Long userId = sharedPrefs.getLong("user_id", -1L);
-
-        return !authToken.isEmpty() && userId > 0;
-    }
-
-    // Method to handle session timeout
-    private void handleSessionTimeout() {
-        new AlertDialog.Builder(this)
-                .setTitle("Session Expired")
-                .setMessage("Your session has expired. Please login again.")
-                .setPositiveButton("Login", (dialog, which) -> performLogout())
-                .setCancelable(false)
-                .setIcon(R.drawable.ic_logout)
-                .show();
-    }
-
 }

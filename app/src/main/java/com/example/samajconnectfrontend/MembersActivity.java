@@ -13,7 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
-
+import com.example.samajconnectfrontend.dialogs.FullScreenImageDialog;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -102,8 +102,15 @@ public class MembersActivity extends AppCompatActivity {
             updateButtonStates("approve_requests");
             loadApproveRequestsView();
         });
-    }
 
+        ImageView backArrow = findViewById(R.id.back_arrow);
+        backArrow.setOnClickListener(v -> onBackPressed());
+    }
+    @Override
+    public void onBackPressed() {
+        Log.d(TAG, "onBackPressed called");
+        super.onBackPressed();
+    }
     private void updateButtonStates(String activeView) {
         currentView = activeView;
 
@@ -370,16 +377,27 @@ public class MembersActivity extends AppCompatActivity {
         // Reload the family tree view with the new tree owner
         loadFamilyTreeView();
     }
-
     private void showUserDetailsDialog(FamilyMember member) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_user_details, null);
 
+        // Initialize all views
         ImageView ivProfile = dialogView.findViewById(R.id.ivProfileDialog);
         TextView tvName = dialogView.findViewById(R.id.tvNameDialog);
         TextView tvEmail = dialogView.findViewById(R.id.tvEmailDialog);
         TextView tvRelationship = dialogView.findViewById(R.id.tvRelationshipDialog);
         TextView tvGeneration = dialogView.findViewById(R.id.tvGenerationDialog);
+        TextView tvPhone = dialogView.findViewById(R.id.tvPhoneDialog);
+        TextView tvGender = dialogView.findViewById(R.id.tvGenderDialog);
+        TextView tvDateOfBirth = dialogView.findViewById(R.id.tvDateOfBirthDialog);
+        TextView tvAddress = dialogView.findViewById(R.id.tvAddressDialog);
+        TextView tvJoinedDate = dialogView.findViewById(R.id.tvJoinedDateDialog);
+        TextView tvBio = dialogView.findViewById(R.id.tvBioDialog);
+        Button btnViewFamilyTree = dialogView.findViewById(R.id.btnViewFamilyTree);
+        Button btnClose = dialogView.findViewById(R.id.btnClose);
+
+        // Store the bitmap for full-screen viewing
+        Bitmap profileBitmap = null;
 
         // Add "(You)" if this is the logged-in user
         String displayName = member.name;
@@ -387,16 +405,38 @@ public class MembersActivity extends AppCompatActivity {
             displayName += " (You)";
         }
 
+        // Set basic information
         tvName.setText(displayName);
         tvEmail.setText(member.email);
-        tvRelationship.setText("Relationship: " + member.relationshipDisplayName);
-        tvGeneration.setText("Generation: " + member.generationName);
+        tvRelationship.setText(member.relationshipDisplayName);
+        tvGeneration.setText(member.generationName);
 
+        // Set profile image and enable click for full-screen view
         if (member.profileImageBase64 != null && !member.profileImageBase64.isEmpty()) {
             try {
                 byte[] decodedString = Base64.decode(member.profileImageBase64, Base64.DEFAULT);
-                Bitmap bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-                ivProfile.setImageBitmap(bitmap);
+                profileBitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                if (profileBitmap != null) {
+                    ivProfile.setImageBitmap(profileBitmap);
+
+                    // Enable click for full-screen view
+                    final Bitmap finalProfileBitmap = profileBitmap;
+                    ivProfile.setOnClickListener(v -> {
+                        FullScreenImageDialog fullScreenDialog = new FullScreenImageDialog(
+                                MembersActivity.this,
+                                finalProfileBitmap,
+                                R.drawable.ic_person_placeholder
+                        );
+                        fullScreenDialog.show();
+                    });
+
+                    // Add visual indication that image is clickable
+                    ivProfile.setClickable(true);
+                    ivProfile.setFocusable(true);
+                 //   ivProfile.setBackground(getResources().getDrawable(R.drawable.clickable_background));
+                } else {
+                    ivProfile.setImageResource(R.drawable.ic_person_placeholder);
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error decoding profile image", e);
                 ivProfile.setImageResource(R.drawable.ic_person_placeholder);
@@ -405,14 +445,132 @@ public class MembersActivity extends AppCompatActivity {
             ivProfile.setImageResource(R.drawable.ic_person_placeholder);
         }
 
-        builder.setView(dialogView)
-                .setTitle("User Details")
-                .setPositiveButton("View Family Tree", (dialog, which) -> {
-                    loadSpecificUserFamilyTree(member.userId);
+        // Load additional user details from API
+        loadUserDetailsFromAPI(member.userId, tvPhone, tvGender, tvDateOfBirth,
+                tvAddress, tvJoinedDate, tvBio);
+
+        // Set button click listeners
+        btnViewFamilyTree.setOnClickListener(v -> {
+            loadSpecificUserFamilyTree(member.userId);
+            // Dismiss the dialog after clicking
+            if (builder != null) {
+                AlertDialog dialog = (AlertDialog) v.getTag();
+                if (dialog != null) {
                     dialog.dismiss();
-                })
-                .setNegativeButton("Close", (dialog, which) -> dialog.dismiss())
-                .show();
+                }
+            }
+        });
+
+        btnClose.setOnClickListener(v -> {
+            AlertDialog dialog = (AlertDialog) v.getTag();
+            if (dialog != null) {
+                dialog.dismiss();
+            }
+        });
+
+        AlertDialog dialog = builder.setView(dialogView)
+                .setTitle("User Details")
+                .create();
+
+        // Store dialog reference in button tags for dismissal
+        btnViewFamilyTree.setTag(dialog);
+        btnClose.setTag(dialog);
+
+        dialog.show();
+    }
+    // Add this new method to load additional user details from API
+    private void loadUserDetailsFromAPI(Long userId, TextView tvPhone, TextView tvGender,
+                                        TextView tvDateOfBirth, TextView tvAddress,TextView tvJoinedDate,
+                                        TextView tvBio) {
+
+        String url = USER_BASE_URL + "/" + userId;
+
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+                response -> {
+                    try {
+                        Log.d(TAG, "User details response: " + response.toString());
+
+                        if (response.getBoolean("success")) {
+                            JSONObject userData = response.optJSONObject("user");
+                            // Set phone number
+                            String phone = userData.optString("phoneNumber", "Not provided");
+                            tvPhone.setText(phone.isEmpty() ? "Not provided" : phone);
+
+                            // Set gender
+                            String gender = userData.optString("gender", "Not specified");
+                            tvGender.setText(gender.isEmpty() ? "Not specified" : gender);
+
+                            // Set date of birth
+                            String dob = userData.optString("dateOfBirth", "Not provided");
+                            tvDateOfBirth.setText(dob.isEmpty() ? "Not provided" : dob);
+
+                            // Set address
+                            String address = userData.optString("address", "Not provided");
+                            tvAddress.setText(address.isEmpty() ? "Not provided" : address);
+
+
+
+                            // Set joined date
+                            String joinedDate = userData.optString("createdAt", "Not available");
+                            if (!joinedDate.equals("Not available")) {
+                                // Format the date if needed
+                                tvJoinedDate.setText(formatDate(joinedDate));
+                            } else {
+                                tvJoinedDate.setText("Not available");
+                            }
+
+                            // Set bio/description
+                            String bio = userData.optString("bio", "No bio available");
+                            if (bio.isEmpty()) {
+                                bio = "No bio available";
+                            }
+                            tvBio.setText(bio);
+
+                        } else {
+                            Log.e(TAG, "Failed to load user details: " + response.getString("message"));
+                            setDefaultValues(tvPhone, tvGender, tvDateOfBirth, tvAddress,
+                                    tvJoinedDate, tvBio);
+                        }
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Error parsing user details", e);
+                        setDefaultValues(tvPhone, tvGender, tvDateOfBirth, tvAddress,
+                                tvJoinedDate, tvBio);
+                    }
+                },
+                error -> {
+                    Log.e(TAG, "Error loading user details", error);
+                    setDefaultValues(tvPhone, tvGender, tvDateOfBirth, tvAddress,
+                            tvJoinedDate, tvBio);
+                }
+        );
+
+        requestQueue.add(request);
+    }
+
+    // Helper method to set default values when API call fails
+    private void setDefaultValues(TextView tvPhone, TextView tvGender, TextView tvDateOfBirth,
+                                  TextView tvAddress, TextView tvJoinedDate, TextView tvBio) {
+        tvPhone.setText("Not provided");
+        tvGender.setText("Not specified");
+        tvDateOfBirth.setText("Not provided");
+        tvAddress.setText("Not provided");
+        tvJoinedDate.setText("Not available");
+        tvBio.setText("No bio available");
+    }
+
+    // Helper method to format date
+    private String formatDate(String dateString) {
+        try {
+            // Assuming the date comes in ISO format, you can format it as needed
+            // This is a simple implementation, you might want to use SimpleDateFormat
+            if (dateString.contains("T")) {
+                return dateString.substring(0, dateString.indexOf("T"));
+            }
+            return dateString;
+        } catch (Exception e) {
+            Log.e(TAG, "Error formatting date", e);
+            return dateString;
+        }
     }
 
     // ==================== REST OF THE CODE REMAINS THE SAME ====================
@@ -1107,6 +1265,7 @@ public class MembersActivity extends AppCompatActivity {
                     }
                 });
             }
+
         }
     }
 }

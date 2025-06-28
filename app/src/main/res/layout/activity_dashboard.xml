@@ -226,7 +226,7 @@
                     android:layout_marginStart="32dp"
                     android:layout_marginTop="24dp"
                     android:layout_marginEnd="32dp"
-                    android:layout_marginBottom="24dp"
+                    android:layout_marginBottom="8dp"
                     android:background="@drawable/white_search_edittext"
                     android:drawableEnd="@drawable/search_icon"
                     android:elevation="3dp"
@@ -239,6 +239,46 @@
                     android:textColorHint="#8d8d8d"
                     android:textSize="16sp"
                     android:textStyle="bold|italic" />
+
+                <!-- Search Results Container -->
+                <LinearLayout
+                    android:id="@+id/searchResultsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="32dp"
+                    android:layout_marginEnd="32dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/white_background_1"
+                    android:elevation="3dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/searchResultsTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="16dp"
+                        android:text="Search Results"
+                        android:textColor="#FF0000"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#E0E0E0" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/searchResultsRecyclerView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxHeight="250dp"
+                        android:minHeight="0dp"
+                        android:scrollbars="vertical"
+                        android:nestedScrollingEnabled="true"
+                        android:overScrollMode="ifContentScrolls" />
+
+                </LinearLayout>
 
                 <!-- Events Section -->
                 <LinearLayout
