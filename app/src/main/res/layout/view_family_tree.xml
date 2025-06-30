@@ -26,31 +26,101 @@
 
         <TextView
             android:id="@+id/tvCurrentUser"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:layout_marginStart="16dp"
             android:text="Current User"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="#1976d2" />
 
+        <!-- View Toggle Buttons -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/toggle_background"
+            android:padding="2dp">
+
+            <Button
+                android:id="@+id/btnListView"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="List"
+                android:textSize="12sp"
+                android:background="@drawable/toggle_button_selected"
+                android:textColor="#ffffff"
+                android:minWidth="60dp" />
+
+            <Button
+                android:id="@+id/btnTreeView"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="Tree"
+                android:textSize="12sp"
+                android:background="@drawable/toggle_button_unselected"
+                android:textColor="#666666"
+                android:minWidth="60dp" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
-    <!-- Family Tree Title -->
+    <!-- Instructions for Tree View -->
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Family Members"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#333333"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Family Tree RecyclerView -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewFamilyTree"
+        android:id="@+id/tvInstructions"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scrollbars="vertical" />
+        android:layout_height="wrap_content"
+        android:text="Tap on any family member to view their family tree\nLong press for details • Pinch to zoom • Drag to pan"
+        android:textSize="12sp"
+        android:textColor="#666666"
+        android:gravity="center"
+        android:padding="8dp"
+        android:background="#e8f5e8"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone" />
+
+    <!-- Content Container -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- List View Container -->
+        <LinearLayout
+            android:id="@+id/listViewContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <!-- Family Tree Title -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Family Members"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Family Tree RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewFamilyTree"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scrollbars="vertical" />
+
+        </LinearLayout>
+
+        <!-- Tree View Container -->
+        <com.example.samajconnectfrontend.views.FamilyTreeView
+            android:id="@+id/familyTreeView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#fafafa"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
 </LinearLayout>

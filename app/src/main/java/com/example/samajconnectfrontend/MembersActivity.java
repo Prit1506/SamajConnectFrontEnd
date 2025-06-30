@@ -14,11 +14,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
 import com.example.samajconnectfrontend.dialogs.FullScreenImageDialog;
+import com.example.samajconnectfrontend.views.FamilyTreeView;
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.android.volley.*;
@@ -31,6 +35,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 
 public class MembersActivity extends AppCompatActivity {
 
@@ -49,6 +57,15 @@ public class MembersActivity extends AppCompatActivity {
     private Long currentUserId; // The logged-in user
     private Long currentTreeOwnerId; // The user whose tree we're currently viewing
     private UserInfo currentTreeOwner; // Information about the tree owner
+
+    // Tree view components
+    private FamilyTreeView familyTreeView;
+    private RecyclerView recyclerViewFamilyTree;
+    private LinearLayout listViewContainer;
+    private Button btnListView, btnTreeView;
+    private TextView tvInstructions;
+    private boolean isTreeViewMode = false;
+    private JSONObject currentTreeData; // Store current tree data
 
     // Current view state
     private String currentView = "family_tree";
@@ -106,11 +123,13 @@ public class MembersActivity extends AppCompatActivity {
         ImageView backArrow = findViewById(R.id.back_arrow);
         backArrow.setOnClickListener(v -> onBackPressed());
     }
+
     @Override
     public void onBackPressed() {
         Log.d(TAG, "onBackPressed called");
         super.onBackPressed();
     }
+
     private void updateButtonStates(String activeView) {
         currentView = activeView;
 
@@ -133,22 +152,115 @@ public class MembersActivity extends AppCompatActivity {
         }
     }
 
-    // ==================== FAMILY TREE VIEW ====================
+    // ==================== FAMILY TREE VIEW - UPDATED WITH TREE VISUALIZATION ====================
 
     private void loadFamilyTreeView() {
         View familyTreeView = LayoutInflater.from(this).inflate(R.layout.view_family_tree, null);
         contentFrame.removeAllViews();
         contentFrame.addView(familyTreeView);
 
-        RecyclerView recyclerView = familyTreeView.findViewById(R.id.recyclerViewFamilyTree);
+        // Initialize components
+        recyclerViewFamilyTree = familyTreeView.findViewById(R.id.recyclerViewFamilyTree);
+        this.familyTreeView = familyTreeView.findViewById(R.id.familyTreeView);
+        listViewContainer = familyTreeView.findViewById(R.id.listViewContainer);
+        btnListView = familyTreeView.findViewById(R.id.btnListView);
+        btnTreeView = familyTreeView.findViewById(R.id.btnTreeView);
+        tvInstructions = familyTreeView.findViewById(R.id.tvInstructions);
+
         TextView tvCurrentUser = familyTreeView.findViewById(R.id.tvCurrentUser);
         ImageView ivCurrentUserProfile = familyTreeView.findViewById(R.id.ivCurrentUserProfile);
 
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewFamilyTree.setLayoutManager(new LinearLayoutManager(this));
+
+        // Setup view toggle buttons
+        setupViewToggleButtons();
+
+        // Setup tree view callbacks
+        setupTreeViewCallbacks();
 
         // Load tree owner info and family tree
         loadTreeOwnerInfo(tvCurrentUser, ivCurrentUserProfile);
-        loadFamilyTreeData(recyclerView);
+        loadFamilyTreeData();
+    }
+
+    private void setupViewToggleButtons() {
+        btnListView.setOnClickListener(v -> {
+            isTreeViewMode = false;
+            updateViewMode();
+        });
+
+        btnTreeView.setOnClickListener(v -> {
+            isTreeViewMode = true;
+            updateViewMode();
+        });
+    }
+
+    private void updateViewMode() {
+        Log.d(TAG, "Switching view mode - isTreeViewMode: " + isTreeViewMode);
+
+        if (isTreeViewMode) {
+            // Show tree view
+            listViewContainer.setVisibility(View.GONE);
+            familyTreeView.setVisibility(View.VISIBLE);
+            tvInstructions.setVisibility(View.VISIBLE);
+
+            // Update button states
+            btnListView.setBackgroundResource(R.drawable.toggle_button_unselected);
+            btnListView.setTextColor(getResources().getColor(R.color.text_secondary));
+            btnTreeView.setBackgroundResource(R.drawable.toggle_button_selected);
+            btnTreeView.setTextColor(getResources().getColor(android.R.color.white));
+
+            // IMPORTANT: Always reload tree data when switching to tree view
+            if (currentTreeData != null) {
+                Log.d(TAG, "Loading cached tree data into tree view");
+                familyTreeView.loadFamilyTreeData(currentTreeData);
+            } else {
+                Log.d(TAG, "No cached data, reloading from API");
+                // If no data, reload from API
+                loadFamilyTreeData();
+            }
+        } else {
+            // Show list view
+            listViewContainer.setVisibility(View.VISIBLE);
+            familyTreeView.setVisibility(View.GONE);
+            tvInstructions.setVisibility(View.GONE);
+
+            // Update button states
+            btnListView.setBackgroundResource(R.drawable.toggle_button_selected);
+            btnListView.setTextColor(getResources().getColor(android.R.color.white));
+            btnTreeView.setBackgroundResource(R.drawable.toggle_button_unselected);
+            btnTreeView.setTextColor(getResources().getColor(R.color.text_secondary));
+        }
+    }
+
+    private void setupTreeViewCallbacks() {
+        familyTreeView.setOnNodeClickListener(node -> {
+            Log.d(TAG, "Tree node clicked: " + node.name + " (ID: " + node.userId + ")");
+
+            // Load the clicked user's family tree
+            if (!node.userId.equals(currentTreeOwnerId)) {
+                currentTreeOwnerId = node.userId;
+                loadFamilyTreeData();
+
+                Toast.makeText(this, "Loading " + node.name + "'s family tree", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        familyTreeView.setOnNodeLongClickListener(node -> {
+            Log.d(TAG, "Tree node long clicked: " + node.name);
+
+            // Convert FamilyNode to FamilyMember for existing dialog
+            FamilyMember member = new FamilyMember();
+            member.userId = node.userId;
+            member.name = node.name;
+            member.email = node.email;
+            member.relationshipDisplayName = node.relationshipDisplayName;
+            member.generationLevel = node.generationLevel;
+            member.generationName = node.generationName;
+            member.isCurrentLoggedInUser = node.userId.equals(currentUserId) && !currentTreeOwnerId.equals(currentUserId);
+
+            showUserDetailsDialog(member);
+        });
     }
 
     private void loadTreeOwnerInfo(TextView tvCurrentUser, ImageView ivCurrentUserProfile) {
@@ -251,28 +363,50 @@ public class MembersActivity extends AppCompatActivity {
         requestQueue.add(request);
     }
 
-    private void loadFamilyTreeData(RecyclerView recyclerView) {
+    private void loadFamilyTreeData() {
         progressDialog.show();
 
         String url = BASE_URL + "/user/" + currentTreeOwnerId;
+        Log.d(TAG, "Loading family tree for user ID: " + currentTreeOwnerId + " (current logged-in user: " + currentUserId + ")");
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     progressDialog.dismiss();
                     try {
+                        Log.d(TAG, "Family tree API response: " + response.toString());
+
                         if (response.getBoolean("success")) {
                             JSONObject data = response.getJSONObject("data");
+
+                            // Store current tree data
+                            currentTreeData = data;
+
+                            Log.d(TAG, "Family tree data received: " + data.toString());
 
                             // Also update tree owner info from family tree response if available
                             if (data.has("rootUser")) {
                                 JSONObject rootUser = data.getJSONObject("rootUser");
+                                Log.d(TAG, "Root user from API: " + rootUser.toString());
                                 updateTreeOwnerFromRootUser(rootUser);
                             }
 
+                            // Load list view data
                             List<FamilyMember> familyMembers = parseFamilyTreeData(data);
+                            Log.d(TAG, "Parsed " + familyMembers.size() + " family members for list view:");
+                            for (FamilyMember member : familyMembers) {
+                                Log.d(TAG, "  - " + member.name + " (ID: " + member.userId + ") " + member.relationshipDisplayName + " level: " + member.generationLevel);
+                            }
 
                             FamilyTreeAdapter adapter = new FamilyTreeAdapter(familyMembers, this::onFamilyMemberClick, this::onFamilyMemberLongClick);
-                            recyclerView.setAdapter(adapter);
+                            recyclerViewFamilyTree.setAdapter(adapter);
+
+                            // Load tree view data if in tree mode
+                            if (isTreeViewMode && familyTreeView != null) {
+                                Log.d(TAG, "Loading data into tree view...");
+                                familyTreeView.loadFamilyTreeData(data);
+                            } else {
+                                Log.d(TAG, "Not loading tree view - isTreeViewMode: " + isTreeViewMode + ", familyTreeView: " + (familyTreeView != null ? "not null" : "null"));
+                            }
                         } else {
                             showError("Failed to load family tree: " + response.getString("message"));
                         }
@@ -374,9 +508,10 @@ public class MembersActivity extends AppCompatActivity {
         // Update the current tree owner
         currentTreeOwnerId = userId;
 
-        // Reload the family tree view with the new tree owner
-        loadFamilyTreeView();
+        // Reload the family tree data with the new tree owner
+        loadFamilyTreeData();
     }
+
     private void showUserDetailsDialog(FamilyMember member) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_user_details, null);
@@ -433,7 +568,6 @@ public class MembersActivity extends AppCompatActivity {
                     // Add visual indication that image is clickable
                     ivProfile.setClickable(true);
                     ivProfile.setFocusable(true);
-                 //   ivProfile.setBackground(getResources().getDrawable(R.drawable.clickable_background));
                 } else {
                     ivProfile.setImageResource(R.drawable.ic_person_placeholder);
                 }
@@ -478,6 +612,7 @@ public class MembersActivity extends AppCompatActivity {
 
         dialog.show();
     }
+
     // Add this new method to load additional user details from API
     private void loadUserDetailsFromAPI(Long userId, TextView tvPhone, TextView tvGender,
                                         TextView tvDateOfBirth, TextView tvAddress,TextView tvJoinedDate,
@@ -507,8 +642,6 @@ public class MembersActivity extends AppCompatActivity {
                             // Set address
                             String address = userData.optString("address", "Not provided");
                             tvAddress.setText(address.isEmpty() ? "Not provided" : address);
-
-
 
                             // Set joined date
                             String joinedDate = userData.optString("createdAt", "Not available");
@@ -573,8 +706,7 @@ public class MembersActivity extends AppCompatActivity {
         }
     }
 
-    // ==================== REST OF THE CODE REMAINS THE SAME ====================
-    // ... (keeping all your existing methods for add relationship, approve requests, etc.)
+    // ==================== ADD RELATIONSHIP VIEW - UPDATED WITH LINEAGE CONTEXT ====================
 
     private void loadAddRelationshipView() {
         View addRelationshipView = LayoutInflater.from(this).inflate(R.layout.view_add_relationship, null);
@@ -583,6 +715,7 @@ public class MembersActivity extends AppCompatActivity {
 
         EditText etSearchUser = addRelationshipView.findViewById(R.id.etSearchUser);
         Spinner spinnerRelationshipType = addRelationshipView.findViewById(R.id.spinnerRelationshipType);
+        Spinner spinnerLineageContext = addRelationshipView.findViewById(R.id.spinnerLineageContext);
         EditText etRequestMessage = addRelationshipView.findViewById(R.id.etRequestMessage);
         Button btnSendRequest = addRelationshipView.findViewById(R.id.btnSendRequest);
         RecyclerView recyclerViewSearchResults = addRelationshipView.findViewById(R.id.recyclerViewSearchResults);
@@ -591,6 +724,9 @@ public class MembersActivity extends AppCompatActivity {
 
         // Load relationship types
         loadRelationshipTypes(spinnerRelationshipType);
+
+        // Setup lineage context spinner
+        setupLineageContextSpinner(spinnerLineageContext);
 
         // Setup search functionality
         Button btnSearch = addRelationshipView.findViewById(R.id.btnSearch);
@@ -602,12 +738,13 @@ public class MembersActivity extends AppCompatActivity {
         });
 
         btnSendRequest.setOnClickListener(v -> {
-            // Handle send relationship request
+            // Handle send relationship request with lineage context
             String message = etRequestMessage.getText().toString().trim();
             String selectedRelationship = spinnerRelationshipType.getSelectedItem().toString();
+            String selectedLineage = spinnerLineageContext.getSelectedItem().toString();
 
             if (selectedUserId != null) {
-                sendRelationshipRequest(selectedUserId, selectedRelationship, message);
+                sendRelationshipRequestWithLineage(selectedUserId, selectedRelationship, selectedLineage, message);
             } else {
                 showError("Please select a user first");
             }
@@ -616,32 +753,78 @@ public class MembersActivity extends AppCompatActivity {
 
     private Long selectedUserId = null;
 
+    private void setupLineageContextSpinner(Spinner spinner) {
+        List<String> lineageOptions = new ArrayList<>();
+        lineageOptions.add("Not Specified"); // Default option
+        lineageOptions.add("PATERNAL");
+        lineageOptions.add("MATERNAL");
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, lineageOptions);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+    }
+
     private void loadRelationshipTypes(Spinner spinner) {
-        String url = BASE_URL + "/relationship-types";
+        // Create a comprehensive list of relationship types based on your backend enum
+        List<String> relationshipTypes = new ArrayList<>();
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
-                response -> {
-                    try {
-                        if (response.getBoolean("success")) {
-                            JSONArray relationshipTypes = response.getJSONArray("data");
-                            List<String> types = new ArrayList<>();
+        // Direct family
+        relationshipTypes.add("FATHER");
+        relationshipTypes.add("MOTHER");
+        relationshipTypes.add("SON");
+        relationshipTypes.add("DAUGHTER");
+        relationshipTypes.add("HUSBAND");
+        relationshipTypes.add("WIFE");
+        relationshipTypes.add("BROTHER");
+        relationshipTypes.add("SISTER");
 
-                            for (int i = 0; i < relationshipTypes.length(); i++) {
-                                types.add(relationshipTypes.getString(i));
-                            }
+        // Grandparents/Grandchildren
+        relationshipTypes.add("PATERNAL_GRANDFATHER");
+        relationshipTypes.add("PATERNAL_GRANDMOTHER");
+        relationshipTypes.add("MATERNAL_GRANDFATHER");
+        relationshipTypes.add("MATERNAL_GRANDMOTHER");
+        relationshipTypes.add("GRANDSON");
+        relationshipTypes.add("GRANDDAUGHTER");
 
-                            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, types);
-                            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                            spinner.setAdapter(adapter);
-                        }
-                    } catch (JSONException e) {
-                        Log.e(TAG, "Error parsing relationship types", e);
-                    }
-                },
-                error -> Log.e(TAG, "Error loading relationship types", error)
-        );
+        // Uncles/Aunts/Nephews/Nieces
+        relationshipTypes.add("PATERNAL_UNCLE");
+        relationshipTypes.add("PATERNAL_AUNT");
+        relationshipTypes.add("MATERNAL_UNCLE");
+        relationshipTypes.add("MATERNAL_AUNT");
+        relationshipTypes.add("NEPHEW");
+        relationshipTypes.add("NIECE");
 
-        requestQueue.add(request);
+        // Cousins
+        relationshipTypes.add("PATERNAL_COUSIN_BROTHER");
+        relationshipTypes.add("PATERNAL_COUSIN_SISTER");
+        relationshipTypes.add("MATERNAL_COUSIN_BROTHER");
+        relationshipTypes.add("MATERNAL_COUSIN_SISTER");
+
+        // In-laws
+        relationshipTypes.add("FATHER_IN_LAW");
+        relationshipTypes.add("MOTHER_IN_LAW");
+        relationshipTypes.add("BROTHER_IN_LAW");
+        relationshipTypes.add("SISTER_IN_LAW");
+        relationshipTypes.add("SON_IN_LAW");
+        relationshipTypes.add("DAUGHTER_IN_LAW");
+
+        // Great grandparents/grandchildren
+        relationshipTypes.add("GREAT_GRANDFATHER");
+        relationshipTypes.add("GREAT_GRANDMOTHER");
+        relationshipTypes.add("GREAT_GRANDSON");
+        relationshipTypes.add("GREAT_GRANDDAUGHTER");
+
+        // Step family
+        relationshipTypes.add("STEP_FATHER");
+        relationshipTypes.add("STEP_MOTHER");
+        relationshipTypes.add("STEP_BROTHER");
+        relationshipTypes.add("STEP_SISTER");
+        relationshipTypes.add("STEP_SON");
+        relationshipTypes.add("STEP_DAUGHTER");
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, relationshipTypes);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
     }
 
     private void searchUsers(String query, RecyclerView recyclerView) {
@@ -717,7 +900,8 @@ public class MembersActivity extends AppCompatActivity {
         Toast.makeText(this, "Selected: " + user.name, Toast.LENGTH_SHORT).show();
     }
 
-    private void sendRelationshipRequest(Long relatedUserId, String relationshipType, String message) {
+    // UPDATED: Send relationship request with lineage context
+    private void sendRelationshipRequestWithLineage(Long relatedUserId, String relationshipType, String lineageContext, String message) {
         progressDialog.show();
 
         String url = BASE_URL + "/relationship";
@@ -728,9 +912,20 @@ public class MembersActivity extends AppCompatActivity {
             requestData.put("relatedUserId", relatedUserId);
             requestData.put("relationshipType", relationshipType);
             requestData.put("requestMessage", message);
-            requestData.put("sendRequest", true);
+
+            // IMPORTANT: Add lineage context if specified
+            if (lineageContext != null && !lineageContext.equals("Not Specified")) {
+                requestData.put("lineageContext", lineageContext);
+                Log.d(TAG, "Adding lineage context: " + lineageContext);
+            }
+
+            // REMOVED: sendRequest field - backend now always sends requests
+
+            Log.d(TAG, "Sending relationship request: " + requestData.toString());
+
         } catch (JSONException e) {
             Log.e(TAG, "Error creating request data", e);
+            progressDialog.dismiss();
             return;
         }
 
@@ -738,12 +933,18 @@ public class MembersActivity extends AppCompatActivity {
                 response -> {
                     progressDialog.dismiss();
                     try {
+                        Log.d(TAG, "Relationship request response: " + response.toString());
+
                         if (response.getBoolean("success")) {
-                            Toast.makeText(this, "Relationship request sent successfully!", Toast.LENGTH_LONG).show();
+                            Toast.makeText(this, "Relationship request sent successfully! Waiting for approval.", Toast.LENGTH_LONG).show();
                             // Clear form
                             selectedUserId = null;
+
+                            // Optionally reload the add relationship view to clear selections
+                            loadAddRelationshipView();
                         } else {
-                            showError("Failed to send request: " + response.getString("message"));
+                            String errorMessage = response.optString("error", response.optString("message", "Unknown error"));
+                            showError("Failed to send request: " + errorMessage);
                         }
                     } catch (JSONException e) {
                         Log.e(TAG, "Error parsing response", e);
@@ -753,66 +954,253 @@ public class MembersActivity extends AppCompatActivity {
                 error -> {
                     progressDialog.dismiss();
                     Log.e(TAG, "Error sending relationship request", error);
-                    showError("Error sending relationship request: " + error.getMessage());
+
+                    String errorMessage = "Error sending relationship request";
+                    if (error.networkResponse != null) {
+                        try {
+                            String responseBody = new String(error.networkResponse.data, "utf-8");
+                            Log.e(TAG, "Error response body: " + responseBody);
+
+                            JSONObject errorJson = new JSONObject(responseBody);
+                            if (errorJson.has("error")) {
+                                errorMessage = errorJson.getString("error");
+                            } else if (errorJson.has("message")) {
+                                errorMessage = errorJson.getString("message");
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error parsing error response", e);
+                        }
+                    }
+
+                    showError(errorMessage);
                 }
         );
 
-        request.setRetryPolicy(new DefaultRetryPolicy(150000, 0, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        request.setRetryPolicy(new DefaultRetryPolicy(30000, 1, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         requestQueue.add(request);
     }
+
+    // ==================== APPROVE REQUESTS VIEW - UPDATED TO SHOW BOTH RECEIVED AND SENT REQUESTS ====================
 
     private void loadApproveRequestsView() {
         View approveRequestsView = LayoutInflater.from(this).inflate(R.layout.view_approve_requests, null);
         contentFrame.removeAllViews();
         contentFrame.addView(approveRequestsView);
 
-        RecyclerView recyclerViewPendingRequests = approveRequestsView.findViewById(R.id.recyclerViewPendingRequests);
-        recyclerViewPendingRequests.setLayoutManager(new LinearLayoutManager(this));
+        // Get UI components
+        TabLayout tabLayout = approveRequestsView.findViewById(R.id.tabLayout);
+        ViewPager2 viewPager = approveRequestsView.findViewById(R.id.viewPager);
 
-        loadPendingRequests(recyclerViewPendingRequests);
+        // Setup tabs and ViewPager
+        setupRequestTabs(tabLayout, viewPager);
     }
 
-    private void loadPendingRequests(RecyclerView recyclerView) {
-        progressDialog.show();
+    private void setupRequestTabs(TabLayout tabLayout, ViewPager2 viewPager) {
+        // Create adapter for ViewPager
+        RequestsPagerAdapter adapter = new RequestsPagerAdapter(this);
+        viewPager.setAdapter(adapter);
 
-        String url = BASE_URL + "/requests/pending/" + currentUserId;
+        // Setup tabs
+        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
+            switch (position) {
+                case 0:
+                    tab.setText("Requests to Approve");
+                    break;
+                case 1:
+                    tab.setText("Requests Sent");
+                    break;
+            }
+        }).attach();
+    }
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
-                response -> {
-                    progressDialog.dismiss();
-                    try {
-                        if (response.getBoolean("success")) {
-                            JSONArray requestsArray = response.getJSONArray("data");
-                            List<RelationshipRequest> requests = new ArrayList<>();
+    // ViewPager adapter for requests tabs
+    public class RequestsPagerAdapter extends FragmentStateAdapter {
+        public RequestsPagerAdapter(FragmentActivity fragmentActivity) {
+            super(fragmentActivity);
+        }
 
-                            for (int i = 0; i < requestsArray.length(); i++) {
-                                JSONObject requestObj = requestsArray.getJSONObject(i);
-                                RelationshipRequest relationshipRequest = new RelationshipRequest();
-                                relationshipRequest.id = requestObj.getLong("id");
-                                relationshipRequest.requesterName = requestObj.optString("requesterName", "Unknown");
-                                relationshipRequest.relationshipDisplayName = requestObj.optString("relationshipDisplayName", "");
-                                relationshipRequest.requestMessage = requestObj.optString("requestMessage", "");
-                                relationshipRequest.createdAt = requestObj.optString("createdAt", "");
+        @Override
+        public Fragment createFragment(int position) {
+            switch (position) {
+                case 0:
+                    return new ReceivedRequestsFragment();
+                case 1:
+                    return new SentRequestsFragment();
+                default:
+                    return new ReceivedRequestsFragment();
+            }
+        }
 
-                                requests.add(relationshipRequest);
+        @Override
+        public int getItemCount() {
+            return 2;
+        }
+    }
+
+    // Fragment for received requests (requests to approve)
+    public static class ReceivedRequestsFragment extends Fragment {
+        private RecyclerView recyclerView;
+        private MembersActivity parentActivity;
+
+        @Override
+        public void onAttach(@NonNull Context context) {
+            super.onAttach(context);
+            parentActivity = (MembersActivity) context;
+        }
+
+        @Override
+        public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+            View view = inflater.inflate(R.layout.fragment_requests_list, container, false);
+            recyclerView = view.findViewById(R.id.recyclerViewRequests);
+            recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+            loadReceivedRequests();
+            return view;
+        }
+
+        private void loadReceivedRequests() {
+            parentActivity.progressDialog.show();
+
+            String url = BASE_URL + "/requests/pending/" + parentActivity.currentUserId;
+
+            JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+                    response -> {
+                        parentActivity.progressDialog.dismiss();
+                        try {
+                            Log.d(TAG, "Received requests response: " + response.toString());
+
+                            if (response.getBoolean("success")) {
+                                JSONArray requestsArray = response.getJSONArray("data");
+                                List<RelationshipRequest> requests = new ArrayList<>();
+
+                                for (int i = 0; i < requestsArray.length(); i++) {
+                                    JSONObject requestObj = requestsArray.getJSONObject(i);
+                                    RelationshipRequest relationshipRequest = new RelationshipRequest();
+                                    relationshipRequest.id = requestObj.getLong("id");
+                                    relationshipRequest.requesterName = requestObj.optString("requesterName", "Unknown");
+                                    relationshipRequest.relationshipDisplayName = requestObj.optString("relationshipDisplayName", "");
+                                    relationshipRequest.requestMessage = requestObj.optString("requestMessage", "");
+                                    relationshipRequest.createdAt = requestObj.optString("createdAt", "");
+                                    relationshipRequest.requestType = "RECEIVED"; // Mark as received request
+
+                                    requests.add(relationshipRequest);
+                                }
+
+                                if (requests.isEmpty()) {
+                                    // Show empty state
+                                    showEmptyState("No pending requests to approve");
+                                } else {
+                                    RelationshipRequestAdapter adapter = new RelationshipRequestAdapter(
+                                            requests,
+                                            parentActivity::onApproveRequest,
+                                            parentActivity::onRejectRequest
+                                    );
+                                    recyclerView.setAdapter(adapter);
+                                }
+                            } else {
+                                String errorMessage = response.optString("error", response.optString("message", "Unknown error"));
+                                parentActivity.showError("Failed to load requests: " + errorMessage);
                             }
-
-                            RelationshipRequestAdapter adapter = new RelationshipRequestAdapter(requests, this::onApproveRequest, this::onRejectRequest);
-                            recyclerView.setAdapter(adapter);
+                        } catch (JSONException e) {
+                            Log.e(TAG, "Error parsing received requests", e);
+                            parentActivity.showError("Error parsing received requests");
                         }
-                    } catch (JSONException e) {
-                        Log.e(TAG, "Error parsing pending requests", e);
-                        showError("Error parsing pending requests");
+                    },
+                    error -> {
+                        parentActivity.progressDialog.dismiss();
+                        Log.e(TAG, "Error loading received requests", error);
+                        parentActivity.showError("Error loading received requests: " + error.getMessage());
                     }
-                },
-                error -> {
-                    progressDialog.dismiss();
-                    Log.e(TAG, "Error loading pending requests", error);
-                    showError("Error loading pending requests: " + error.getMessage());
-                }
-        );
+            );
 
-        requestQueue.add(request);
+            parentActivity.requestQueue.add(request);
+        }
+
+        private void showEmptyState(String message) {
+            // You can create a simple empty state view or just show a toast
+            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Fragment for sent requests (requests waiting for approval)
+    public static class SentRequestsFragment extends Fragment {
+        private RecyclerView recyclerView;
+        private MembersActivity parentActivity;
+
+        @Override
+        public void onAttach(@NonNull Context context) {
+            super.onAttach(context);
+            parentActivity = (MembersActivity) context;
+        }
+
+        @Override
+        public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+            View view = inflater.inflate(R.layout.fragment_requests_list, container, false);
+            recyclerView = view.findViewById(R.id.recyclerViewRequests);
+            recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+            loadSentRequests();
+            return view;
+        }
+
+        private void loadSentRequests() {
+            parentActivity.progressDialog.show();
+
+            String url = BASE_URL + "/requests/sent/" + parentActivity.currentUserId;
+
+            JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+                    response -> {
+                        parentActivity.progressDialog.dismiss();
+                        try {
+                            Log.d(TAG, "Sent requests response: " + response.toString());
+
+                            if (response.getBoolean("success")) {
+                                JSONArray requestsArray = response.getJSONArray("data");
+                                List<RelationshipRequest> requests = new ArrayList<>();
+
+                                for (int i = 0; i < requestsArray.length(); i++) {
+                                    JSONObject requestObj = requestsArray.getJSONObject(i);
+                                    RelationshipRequest relationshipRequest = new RelationshipRequest();
+                                    relationshipRequest.id = requestObj.getLong("id");
+                                    relationshipRequest.targetName = requestObj.optString("targetName", "Unknown");
+                                    relationshipRequest.relationshipDisplayName = requestObj.optString("relationshipDisplayName", "");
+                                    relationshipRequest.requestMessage = requestObj.optString("requestMessage", "");
+                                    relationshipRequest.createdAt = requestObj.optString("createdAt", "");
+                                    relationshipRequest.requestType = "SENT"; // Mark as sent request
+
+                                    requests.add(relationshipRequest);
+                                }
+
+                                if (requests.isEmpty()) {
+                                    // Show empty state
+                                    showEmptyState("No pending sent requests");
+                                } else {
+                                    // Use a different adapter for sent requests (no approve/reject buttons)
+                                    SentRequestsAdapter adapter = new SentRequestsAdapter(requests);
+                                    recyclerView.setAdapter(adapter);
+                                }
+                            } else {
+                                String errorMessage = response.optString("error", response.optString("message", "Unknown error"));
+                                parentActivity.showError("Failed to load sent requests: " + errorMessage);
+                            }
+                        } catch (JSONException e) {
+                            Log.e(TAG, "Error parsing sent requests", e);
+                            parentActivity.showError("Error parsing sent requests");
+                        }
+                    },
+                    error -> {
+                        parentActivity.progressDialog.dismiss();
+                        Log.e(TAG, "Error loading sent requests", error);
+                        parentActivity.showError("Error loading sent requests: " + error.getMessage());
+                    }
+            );
+
+            parentActivity.requestQueue.add(request);
+        }
+
+        private void showEmptyState(String message) {
+            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void onApproveRequest(RelationshipRequest request) {
@@ -833,8 +1221,12 @@ public class MembersActivity extends AppCompatActivity {
             responseData.put("requestId", requestId);
             responseData.put("status", status);
             responseData.put("respondingUserId", currentUserId);
+
+            Log.d(TAG, "Responding to request: " + responseData.toString());
+
         } catch (JSONException e) {
             Log.e(TAG, "Error creating response data", e);
+            progressDialog.dismiss();
             return;
         }
 
@@ -842,12 +1234,25 @@ public class MembersActivity extends AppCompatActivity {
                 response -> {
                     progressDialog.dismiss();
                     try {
+                        Log.d(TAG, "Request response: " + response.toString());
+
                         if (response.getBoolean("success")) {
-                            Toast.makeText(this, "Request " + status.toLowerCase() + " successfully!", Toast.LENGTH_LONG).show();
-                            // Reload pending requests
+                            String message = response.optString("message", "Request " + status.toLowerCase() + " successfully!");
+                            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+
+                            // Reload approve requests view to refresh both tabs
                             loadApproveRequestsView();
+
+                            // If approved, also refresh family tree to show new relationship
+                            if ("APPROVED".equals(status)) {
+                                // Optionally switch to family tree view to show the new relationship
+                                updateButtonStates("family_tree");
+                                currentTreeOwnerId = currentUserId; // Reset to own tree
+                                loadFamilyTreeView();
+                            }
                         } else {
-                            showError("Failed to respond to request: " + response.getString("message"));
+                            String errorMessage = response.optString("error", response.optString("message", "Unknown error"));
+                            showError("Failed to respond to request: " + errorMessage);
                         }
                     } catch (JSONException e) {
                         Log.e(TAG, "Error parsing response", e);
@@ -857,15 +1262,35 @@ public class MembersActivity extends AppCompatActivity {
                 error -> {
                     progressDialog.dismiss();
                     Log.e(TAG, "Error responding to request", error);
-                    showError("Error responding to request: " + error.getMessage());
+
+                    String errorMessage = "Error responding to request";
+                    if (error.networkResponse != null) {
+                        try {
+                            String responseBody = new String(error.networkResponse.data, "utf-8");
+                            Log.e(TAG, "Error response body: " + responseBody);
+
+                            JSONObject errorJson = new JSONObject(responseBody);
+                            if (errorJson.has("error")) {
+                                errorMessage = errorJson.getString("error");
+                            } else if (errorJson.has("message")) {
+                                errorMessage = errorJson.getString("message");
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error parsing error response", e);
+                        }
+                    }
+
+                    showError(errorMessage);
                 }
         );
 
+        request.setRetryPolicy(new DefaultRetryPolicy(30000, 1, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         requestQueue.add(request);
     }
 
     private void showError(String message) {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        Log.e(TAG, "Error: " + message);
     }
 
     // ==================== DATA CLASSES ====================
@@ -903,9 +1328,11 @@ public class MembersActivity extends AppCompatActivity {
     public static class RelationshipRequest {
         public Long id;
         public String requesterName;
+        public String targetName; // For sent requests
         public String relationshipDisplayName;
         public String requestMessage;
         public String createdAt;
+        public String requestType; // "RECEIVED" or "SENT"
     }
 
     // ==================== ADAPTERS ====================
@@ -1003,7 +1430,6 @@ public class MembersActivity extends AppCompatActivity {
         }
     }
 
-    // ... (rest of your adapters remain the same)
     public static class SamajMemberSearchAdapter extends RecyclerView.Adapter<SamajMemberSearchAdapter.ViewHolder> {
         private List<SamajMember> members;
         private OnSamajMemberSelectedListener listener;
@@ -1196,6 +1622,7 @@ public class MembersActivity extends AppCompatActivity {
         }
     }
 
+    // UPDATED: RelationshipRequestAdapter for received requests (with approve/reject buttons)
     public static class RelationshipRequestAdapter extends RecyclerView.Adapter<RelationshipRequestAdapter.ViewHolder> {
         private List<RelationshipRequest> requests;
         private OnRequestActionListener approveListener;
@@ -1248,8 +1675,7 @@ public class MembersActivity extends AppCompatActivity {
 
             public void bind(RelationshipRequest request) {
                 tvRequesterName.setText(request.requesterName);
-                tvRelationship.setText("Your " + request.relationshipDisplayName);
-
+                tvRelationship.setText("Wants to be your " + request.relationshipDisplayName);
                 tvMessage.setText(request.requestMessage != null ? request.requestMessage : "No message provided.");
                 tvDate.setText(request.createdAt);
 
@@ -1265,7 +1691,57 @@ public class MembersActivity extends AppCompatActivity {
                     }
                 });
             }
+        }
+    }
 
+    // NEW: SentRequestsAdapter for sent requests (no action buttons, just status)
+    public static class SentRequestsAdapter extends RecyclerView.Adapter<SentRequestsAdapter.ViewHolder> {
+        private List<RelationshipRequest> requests;
+
+        public SentRequestsAdapter(List<RelationshipRequest> requests) {
+            this.requests = requests;
+        }
+
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_send_request, parent, false);
+            return new ViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            RelationshipRequest request = requests.get(position);
+            holder.bind(request);
+        }
+
+        @Override
+        public int getItemCount() {
+            return requests.size();
+        }
+
+        public class ViewHolder extends RecyclerView.ViewHolder {
+            private TextView tvTargetName;
+            private TextView tvRelationship;
+            private TextView tvMessage;
+            private TextView tvDate;
+            private TextView tvStatus;
+
+            public ViewHolder(View itemView) {
+                super(itemView);
+                tvTargetName = itemView.findViewById(R.id.tvTargetName);
+                tvRelationship = itemView.findViewById(R.id.tvRelationship);
+                tvMessage = itemView.findViewById(R.id.tvMessage);
+                tvDate = itemView.findViewById(R.id.tvDate);
+                tvStatus = itemView.findViewById(R.id.tvStatus);
+            }
+
+            public void bind(RelationshipRequest request) {
+                tvTargetName.setText("To: " + request.targetName);
+                tvRelationship.setText("Your " + request.relationshipDisplayName);
+                tvMessage.setText(request.requestMessage != null ? request.requestMessage : "No message provided.");
+                tvDate.setText("Sent: " + request.createdAt);
+                tvStatus.setText("Status: Waiting for approval");
+            }
         }
     }
 }

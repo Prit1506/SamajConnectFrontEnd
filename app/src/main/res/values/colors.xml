@@ -66,7 +66,6 @@
     <!-- Transparent -->
     <color name="transparent">#00000000</color>
     <color name="semi_transparent">#80000000</color>
-
     <!-- Material Design Colors -->
     <color name="blue_500">#2196F3</color>
     <color name="blue_700">#1976D2</color>
@@ -118,4 +117,12 @@
     <color name="background_light">#F5F5F5</color>
     <color name="text_primary">#212121</color>
     <color name="text_secondary">#757575</color>
+
+    <!-- Custom colors for the app -->
+    <color name="primary_blue">#2196F3</color>
+    <color name="primary_blue_dark">#1976D2</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="success_green">#4CAF50</color>
+    <color name="warning_orange">#FF9800</color>
+    <color name="error_red">#F44336</color>
 </resources>
