@@ -31,6 +31,8 @@ import com.android.volley.toolbox.Volley;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -252,6 +254,7 @@ public class MembersActivity extends AppCompatActivity {
             // Convert FamilyNode to FamilyMember for existing dialog
             FamilyMember member = new FamilyMember();
             member.userId = node.userId;
+            member.profileImageBase64 = encodeImageToBase64(node.profileBitmap);
             member.name = node.name;
             member.email = node.email;
             member.relationshipDisplayName = node.relationshipDisplayName;
@@ -261,6 +264,13 @@ public class MembersActivity extends AppCompatActivity {
 
             showUserDetailsDialog(member);
         });
+    }
+
+    private String encodeImageToBase64(Bitmap bitmap) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+        byte[] byteArray = byteArrayOutputStream.toByteArray();
+        return Base64.encodeToString(byteArray, Base64.NO_WRAP);
     }
 
     private void loadTreeOwnerInfo(TextView tvCurrentUser, ImageView ivCurrentUserProfile) {
