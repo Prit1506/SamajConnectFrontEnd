@@ -19,21 +19,21 @@ public class FamilyTreeView extends View {
     private static final String TAG = "FamilyTreeView";
 
     // Drawing constants - REDUCED for better compactness
-    private static final int NODE_RADIUS = 120; // Reduced from 160
-    private static final int NODE_SPACING_X = 400; // Reduced from 800
-    private static final int MIN_NODE_SPACING_X = 600; // Reduced from 1200
-    private static final int NODE_SPACING_Y = 450; // Reduced from 700
-    private static final int LINE_WIDTH = 4; // Reduced from 6
-    private static final int TEXT_SIZE = 28; // Reduced from 32
-    private static final int RELATIONSHIP_TEXT_SIZE = 22; // Reduced from 26
-    private static final int LEVEL_TEXT_SIZE = 20; // Reduced from 24
-    private static final int NAME_MARGIN = 80; // Reduced from 100
-    private static final int RELATIONSHIP_MARGIN = 120; // Reduced from 160
-    private static final int PROFILE_MARGIN = 25; // Reduced from 30
-    private static final int TEXT_PADDING = 20; // Reduced from 25
-    private static final int MIN_TEXT_SPACING = 60; // Reduced from 100
-    private static final int MAX_TEXT_WIDTH = 300; // Reduced from 400
-    private static final int TEXT_LINE_SPACING = 8; // Reduced from 12
+    private static final int NODE_RADIUS = 120;
+    private static final int NODE_SPACING_X = 400;
+    private static final int MIN_NODE_SPACING_X = 600;
+    private static final int NODE_SPACING_Y = 450;
+    private static final int LINE_WIDTH = 4;
+    private static final int TEXT_SIZE = 28;
+    private static final int RELATIONSHIP_TEXT_SIZE = 22;
+    private static final int LEVEL_TEXT_SIZE = 20;
+    private static final int NAME_MARGIN = 80;
+    private static final int RELATIONSHIP_MARGIN = 120;
+    private static final int PROFILE_MARGIN = 25;
+    private static final int TEXT_PADDING = 20;
+    private static final int MIN_TEXT_SPACING = 60;
+    private static final int MAX_TEXT_WIDTH = 300;
+    private static final int TEXT_LINE_SPACING = 8;
 
     // Enhanced colors
     private static final int NODE_COLOR = Color.parseColor("#FFFFFF");
@@ -66,7 +66,7 @@ public class FamilyTreeView extends View {
     // Touch and zoom handling
     private GestureDetector gestureDetector;
     private ScaleGestureDetector scaleGestureDetector;
-    private float scaleFactor = 0.8f; // Increased from 0.6f to show nodes larger initially
+    private float scaleFactor = 0.8f;
     private float translateX = 0f;
     private float translateY = 0f;
 
@@ -100,22 +100,22 @@ public class FamilyTreeView extends View {
         nodePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         nodePaint.setColor(NODE_COLOR);
         nodePaint.setStyle(Paint.Style.FILL);
-        nodePaint.setShadowLayer(10, 0, 6, Color.parseColor("#40000000")); // Reduced shadow
+        nodePaint.setShadowLayer(10, 0, 6, Color.parseColor("#40000000"));
 
         nodeBorderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         nodeBorderPaint.setColor(NODE_BORDER_COLOR);
         nodeBorderPaint.setStyle(Paint.Style.STROKE);
-        nodeBorderPaint.setStrokeWidth(8); // Reduced from 10
+        nodeBorderPaint.setStrokeWidth(8);
 
         rootNodePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         rootNodePaint.setColor(ROOT_NODE_COLOR);
         rootNodePaint.setStyle(Paint.Style.FILL);
-        rootNodePaint.setShadowLayer(12, 0, 8, Color.parseColor("#40000000")); // Reduced shadow
+        rootNodePaint.setShadowLayer(12, 0, 8, Color.parseColor("#40000000"));
 
         rootNodeBorderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         rootNodeBorderPaint.setColor(ROOT_NODE_BORDER_COLOR);
         rootNodeBorderPaint.setStyle(Paint.Style.STROKE);
-        rootNodeBorderPaint.setStrokeWidth(10); // Reduced from 12
+        rootNodeBorderPaint.setStrokeWidth(10);
 
         textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setColor(TEXT_COLOR);
@@ -144,7 +144,7 @@ public class FamilyTreeView extends View {
         textBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textBackgroundPaint.setColor(Color.parseColor("#FFFFFF"));
         textBackgroundPaint.setAlpha(240);
-        textBackgroundPaint.setShadowLayer(6, 0, 3, Color.parseColor("#30000000")); // Reduced shadow
+        textBackgroundPaint.setShadowLayer(6, 0, 3, Color.parseColor("#30000000"));
 
         connectionLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         connectionLinePaint.setColor(LINE_COLOR);
@@ -222,13 +222,11 @@ public class FamilyTreeView extends View {
             Log.d(TAG, "Total nodes created: " + familyNodes.size());
             Log.d(TAG, "Root node: " + (rootNode != null ? rootNode.name + " (ID: " + rootNode.userId + ")" : "NULL"));
 
-            // Log all family nodes
-            for (FamilyNode node : familyNodes) {
-                Log.d(TAG, "Family node: " + node.name + " (ID: " + node.userId + ") isRoot: " + node.isRoot + " level: " + node.generationLevel + " relationship: " + node.relationshipDisplayName);
-            }
-
             // Calculate positions with anti-overlap algorithm
             calculateOptimizedNodePositions();
+
+            // FIXED: Establish proper relationships for connection drawing
+            establishProperNodeRelationships();
 
             // Center the view on root node
             centerOnRoot();
@@ -306,7 +304,7 @@ public class FamilyTreeView extends View {
     private void calculateOptimizedNodePositions() {
         if (rootNode == null) return;
 
-        int centerX = 2000; // Reduced canvas size
+        int centerX = 2000;
         int centerY = 2000;
 
         // Position root node at center
@@ -327,52 +325,37 @@ public class FamilyTreeView extends View {
 
             Log.d(TAG, "Positioning generation " + level + " with " + levelNodes.size() + " nodes");
 
-            // IMPORTANT: Handle level 0 (same generation) differently
             int yPosition;
             if (level == 0) {
-                // Same generation as root - position at same Y level but to the side
                 yPosition = centerY;
                 Log.d(TAG, "Level 0 (same generation) - positioning at same Y as root: " + yPosition);
             } else {
-                // Different generation - position above or below root
                 yPosition = centerY + (level * NODE_SPACING_Y);
                 Log.d(TAG, "Level " + level + " - positioning at Y: " + yPosition);
             }
 
-            // Position nodes with anti-overlap logic
             positionNodesWithoutOverlap(levelNodes, centerX, yPosition, level);
         }
 
-        establishNodeRelationships();
-
-        // Log all node positions for debugging
         logNodePositions();
     }
 
-    // NEW: Anti-overlap positioning algorithm with REDUCED spacing
     private void positionNodesWithoutOverlap(List<FamilyNode> nodes, int centerX, int yPosition, int level) {
         if (nodes.isEmpty()) return;
 
-        // Group nodes by relationship side for better organization
         Map<String, List<FamilyNode>> sideGroups = groupNodesBySide(nodes);
-
-        // Calculate required spacing to prevent any overlap - REDUCED
         int requiredSpacing = calculateMinimumSpacing(nodes);
 
-        // Position each side group with generous spacing
         List<String> sides = new ArrayList<>(sideGroups.keySet());
         int totalNodes = nodes.size();
 
         if (totalNodes == 1) {
-            // Single node
             FamilyNode singleNode = nodes.get(0);
 
             if (level == 0) {
-                // Same generation - position closer to root
-                singleNode.x = centerX + (NODE_SPACING_X); // Reduced multiplier
+                singleNode.x = centerX + (NODE_SPACING_X);
                 Log.d(TAG, "Single level 0 node " + singleNode.name + " positioned to the right of root");
             } else {
-                // Different generation - center it
                 singleNode.x = centerX;
             }
 
@@ -381,23 +364,18 @@ public class FamilyTreeView extends View {
             return;
         }
 
-        // Multiple nodes - distribute them evenly with REDUCED spacing
         int totalWidth = (totalNodes - 1) * requiredSpacing;
         int startX;
 
         if (level == 0) {
-            // Same generation - start closer to root
-            startX = centerX + (NODE_SPACING_X / 2) - totalWidth / 2; // Reduced offset
+            startX = centerX + (NODE_SPACING_X / 2) - totalWidth / 2;
             Log.d(TAG, "Level 0 (same generation) - starting X position: " + startX);
         } else {
-            // Different generation - center around root
             startX = centerX - totalWidth / 2;
             Log.d(TAG, "Level " + level + " - starting X position: " + startX);
         }
 
         int currentIndex = 0;
-
-        // Position nodes in order: PATERNAL, DIRECT, MATERNAL, SPOUSE_FAMILY, STEP_FAMILY"};
         String[] sideOrder = {"PATERNAL", "DIRECT", "MATERNAL", "SPOUSE_FAMILY", "STEP_FAMILY"};
 
         for (String side : sideOrder) {
@@ -415,12 +393,10 @@ public class FamilyTreeView extends View {
         }
     }
 
-    // Calculate minimum spacing to prevent overlap - REDUCED values
     private int calculateMinimumSpacing(List<FamilyNode> nodes) {
         int maxTextWidth = 0;
 
         for (FamilyNode node : nodes) {
-            // Calculate full name text width
             String fullName = node.name != null ? node.name : "";
             List<String> nameLines = wrapText(fullName, textPaint, MAX_TEXT_WIDTH);
 
@@ -430,7 +406,6 @@ public class FamilyTreeView extends View {
                 maxLineWidth = Math.max(maxLineWidth, lineWidth);
             }
 
-            // Calculate relationship text width
             int relationshipWidth = 0;
             if (!node.isRoot && node.relationshipDisplayName != null && !node.relationshipDisplayName.isEmpty()) {
                 List<String> relationshipLines = wrapText(node.relationshipDisplayName, relationshipTextPaint, MAX_TEXT_WIDTH);
@@ -440,12 +415,11 @@ public class FamilyTreeView extends View {
                 }
             }
 
-            int totalTextWidth = Math.max(maxLineWidth, relationshipWidth) + (TEXT_PADDING * 2); // Reduced padding
+            int totalTextWidth = Math.max(maxLineWidth, relationshipWidth) + (TEXT_PADDING * 2);
             maxTextWidth = Math.max(maxTextWidth, totalTextWidth);
         }
 
-        // MUCH more compact spacing - just enough to prevent overlap
-        int minimumSpacing = (NODE_RADIUS * 3) + maxTextWidth + MIN_TEXT_SPACING; // Reduced multiplier
+        int minimumSpacing = (NODE_RADIUS * 3) + maxTextWidth + MIN_TEXT_SPACING;
         return Math.max(MIN_NODE_SPACING_X, minimumSpacing);
     }
 
@@ -467,7 +441,6 @@ public class FamilyTreeView extends View {
         return groups;
     }
 
-    // Text wrapping function
     private List<String> wrapText(String text, Paint paint, int maxWidth) {
         List<String> lines = new ArrayList<>();
         if (text == null || text.isEmpty()) {
@@ -505,28 +478,131 @@ public class FamilyTreeView extends View {
         return lines;
     }
 
-    private void establishNodeRelationships() {
+    /**
+     * FIXED: Establish proper relationships based on generation levels and relationship types
+     */
+    private void establishProperNodeRelationships() {
+        Log.d(TAG, "=== ESTABLISHING NODE RELATIONSHIPS ===");
+
+        // Clear existing relationships
         for (FamilyNode node : familyNodes) {
             node.children = new ArrayList<>();
             node.parents = new ArrayList<>();
+            node.siblings = new ArrayList<>();
         }
 
-        if (rootNode != null) {
-            for (List<FamilyNode> levelNodes : generationMap.values()) {
-                for (FamilyNode node : levelNodes) {
-                    if (node.generationLevel > 0) {
-                        rootNode.children.add(node);
-                        node.parents.add(rootNode);
-                    } else if (node.generationLevel < 0) {
-                        node.children.add(rootNode);
-                        rootNode.parents.add(node);
+        if (rootNode == null) return;
+
+        // Establish parent-child relationships based on generation levels
+        for (Map.Entry<Integer, List<FamilyNode>> entry : generationMap.entrySet()) {
+            int level = entry.getKey();
+            List<FamilyNode> levelNodes = entry.getValue();
+
+            for (FamilyNode node : levelNodes) {
+                if (level < 0) {
+                    // This node is an ancestor of root (parent, grandparent, etc.)
+                    establishAncestorRelationship(rootNode, node, Math.abs(level));
+                } else if (level > 0) {
+                    // This node is a descendant of root (child, grandchild, etc.)
+                    establishDescendantRelationship(rootNode, node, level);
+                } else if (level == 0) {
+                    // Same generation - could be sibling, spouse, cousin, etc.
+                    establishSameGenerationRelationship(rootNode, node);
+                }
+            }
+        }
+
+        // Establish sibling relationships within same generation levels
+        for (List<FamilyNode> levelNodes : generationMap.values()) {
+            establishSiblingRelationships(levelNodes);
+        }
+
+        // Log established relationships
+        logEstablishedRelationships();
+    }
+
+    private void establishAncestorRelationship(FamilyNode descendant, FamilyNode ancestor, int generationGap) {
+        Log.d(TAG, "Establishing ancestor relationship: " + ancestor.name + " -> " + descendant.name + " (gap: " + generationGap + ")");
+
+        if (generationGap == 1) {
+            // Direct parent
+            ancestor.children.add(descendant);
+            descendant.parents.add(ancestor);
+        } else {
+            // Grandparent or higher - establish indirect relationship
+            ancestor.children.add(descendant);
+            descendant.parents.add(ancestor);
+        }
+    }
+
+    private void establishDescendantRelationship(FamilyNode ancestor, FamilyNode descendant, int generationGap) {
+        Log.d(TAG, "Establishing descendant relationship: " + ancestor.name + " -> " + descendant.name + " (gap: " + generationGap + ")");
+
+        if (generationGap == 1) {
+            // Direct child
+            ancestor.children.add(descendant);
+            descendant.parents.add(ancestor);
+        } else {
+            // Grandchild or lower - establish indirect relationship
+            ancestor.children.add(descendant);
+            descendant.parents.add(ancestor);
+        }
+    }
+
+    private void establishSameGenerationRelationship(FamilyNode root, FamilyNode peer) {
+        Log.d(TAG, "Establishing same generation relationship: " + root.name + " <-> " + peer.name + " (" + peer.relationshipDisplayName + ")");
+
+        // For same generation, they could be siblings, spouses, cousins, etc.
+        // We'll treat them as connected peers
+        root.siblings.add(peer);
+        peer.siblings.add(root);
+    }
+
+    private void establishSiblingRelationships(List<FamilyNode> levelNodes) {
+        if (levelNodes.size() < 2) return;
+
+        // Group by relationship side to identify actual siblings
+        Map<String, List<FamilyNode>> sideGroups = groupNodesBySide(levelNodes);
+
+        for (List<FamilyNode> sideNodes : sideGroups.values()) {
+            if (sideNodes.size() < 2) continue;
+
+            // Establish sibling relationships within the same side
+            for (int i = 0; i < sideNodes.size(); i++) {
+                for (int j = i + 1; j < sideNodes.size(); j++) {
+                    FamilyNode node1 = sideNodes.get(i);
+                    FamilyNode node2 = sideNodes.get(j);
+
+                    if (!node1.siblings.contains(node2)) {
+                        node1.siblings.add(node2);
+                        node2.siblings.add(node1);
+                        Log.d(TAG, "Established sibling relationship: " + node1.name + " <-> " + node2.name);
                     }
                 }
             }
         }
     }
 
-    // NEW: Debug logging for node positions
+    private void logEstablishedRelationships() {
+        Log.d(TAG, "=== ESTABLISHED RELATIONSHIPS ===");
+        for (FamilyNode node : familyNodes) {
+            Log.d(TAG, "Node: " + node.name + " (ID: " + node.userId + ")");
+            Log.d(TAG, "  Parents: " + node.parents.size());
+            for (FamilyNode parent : node.parents) {
+                Log.d(TAG, "    - " + parent.name);
+            }
+            Log.d(TAG, "  Children: " + node.children.size());
+            for (FamilyNode child : node.children) {
+                Log.d(TAG, "    - " + child.name);
+            }
+            Log.d(TAG, "  Siblings: " + node.siblings.size());
+            for (FamilyNode sibling : node.siblings) {
+                Log.d(TAG, "    - " + sibling.name);
+            }
+        }
+        Log.d(TAG, "================================");
+    }
+
     private void logNodePositions() {
         Log.d(TAG, "=== NODE POSITIONS ===");
         if (rootNode != null) {
@@ -573,12 +649,10 @@ public class FamilyTreeView extends View {
         List<Integer> sortedLevels = new ArrayList<>(generationMap.keySet());
         Collections.sort(sortedLevels);
 
-        int leftMargin = 80; // Reduced margin
+        int leftMargin = 80;
 
-        // Draw root level indicator
         canvas.drawText("You", leftMargin, rootNode.y + 10, levelPaint);
 
-        // Draw indicators for all other levels
         for (int level : sortedLevels) {
             List<FamilyNode> levelNodes = generationMap.get(level);
             if (levelNodes == null || levelNodes.isEmpty()) continue;
@@ -587,8 +661,7 @@ public class FamilyTreeView extends View {
             float yPosition;
 
             if (level == 0) {
-                // Same generation - show at same Y as root but offset slightly
-                yPosition = rootNode.y + 30; // Reduced offset
+                yPosition = rootNode.y + 30;
                 levelText = "Same Generation";
             } else {
                 yPosition = rootNode.y + (level * NODE_SPACING_Y) + 10;
@@ -612,28 +685,72 @@ public class FamilyTreeView extends View {
         }
     }
 
+    /**
+     * FIXED: Improved connection drawing logic
+     */
     private void drawConnections(Canvas canvas) {
         if (rootNode == null) return;
 
+        Log.d(TAG, "=== DRAWING CONNECTIONS ===");
+
+        // Draw parent-child connections
+        drawParentChildConnections(canvas);
+
+        // Draw sibling connections
+        drawSiblingConnectionsImproved(canvas);
+
+        Log.d(TAG, "=== CONNECTIONS DRAWN ===");
+    }
+
+    private void drawParentChildConnections(Canvas canvas) {
+        Log.d(TAG, "Drawing parent-child connections...");
+
+        // Draw connections from root to all its children and parents
+        for (FamilyNode child : rootNode.children) {
+            drawSmoothConnectionLine(canvas, rootNode, child);
+            Log.d(TAG, "Drew connection: " + rootNode.name + " -> " + child.name);
+        }
+
+        for (FamilyNode parent : rootNode.parents) {
+            drawSmoothConnectionLine(canvas, parent, rootNode);
+            Log.d(TAG, "Drew connection: " + parent.name + " -> " + rootNode.name);
+        }
+
+        // Draw connections between other family members
+        for (List<FamilyNode> levelNodes : generationMap.values()) {
+            for (FamilyNode node : levelNodes) {
+                // Draw connections to children
+                for (FamilyNode child : node.children) {
+                    if (!child.equals(rootNode)) { // Avoid duplicate lines to root
+                        drawSmoothConnectionLine(canvas, node, child);
+                        Log.d(TAG, "Drew connection: " + node.name + " -> " + child.name);
+                    }
+                }
+            }
+        }
+    }
+
+    private void drawSiblingConnectionsImproved(Canvas canvas) {
+        Log.d(TAG, "Drawing sibling connections...");
+
+        // Draw sibling connections for each generation level
         for (Map.Entry<Integer, List<FamilyNode>> entry : generationMap.entrySet()) {
             int level = entry.getKey();
             List<FamilyNode> levelNodes = entry.getValue();
 
-            for (FamilyNode node : levelNodes) {
-                if (level == 0) {
-                    // Same generation - draw horizontal connection
-                    drawSameGenerationConnection(canvas, rootNode, node);
-                } else {
-                    // Different generation - draw vertical connection
-                    drawSmoothConnectionLine(canvas, rootNode, node);
-                }
+            if (levelNodes.size() > 1) {
+                Log.d(TAG, "Drawing sibling connections for level " + level + " with " + levelNodes.size() + " nodes");
+                drawSiblingConnections(canvas, levelNodes);
             }
         }
 
-        // Draw sibling connections for each level
-        for (List<FamilyNode> levelNodes : generationMap.values()) {
-            if (levelNodes.size() > 1) {
-                drawSiblingConnections(canvas, levelNodes);
+        // Special handling for same generation (level 0) - draw horizontal connections
+        List<FamilyNode> sameGenNodes = generationMap.get(0);
+        if (sameGenNodes != null && !sameGenNodes.isEmpty()) {
+            Log.d(TAG, "Drawing same generation connections...");
+            for (FamilyNode node : sameGenNodes) {
+                drawSameGenerationConnection(canvas, rootNode, node);
+                Log.d(TAG, "Drew same generation connection: " + rootNode.name + " <-> " + node.name);
             }
         }
     }
@@ -663,10 +780,12 @@ public class FamilyTreeView extends View {
 
         FamilyNode first = sortedNodes.get(0);
         FamilyNode last = sortedNodes.get(sortedNodes.size() - 1);
-        float y = first.y - NODE_RADIUS - 40; // Reduced offset
+        float y = first.y - NODE_RADIUS - 40;
 
+        // Draw horizontal line connecting all siblings
         canvas.drawLine(first.x, y, last.x, y, siblingLinePaint);
 
+        // Draw vertical lines from horizontal line to each sibling
         for (FamilyNode node : sortedNodes) {
             canvas.drawLine(node.x, y, node.x, node.y - NODE_RADIUS, siblingLinePaint);
         }
@@ -674,7 +793,6 @@ public class FamilyTreeView extends View {
 
     private void drawSameGenerationConnection(Canvas canvas, FamilyNode from, FamilyNode to) {
         // Draw horizontal line for same generation (siblings, spouses, etc.)
-        float midY = (from.y + to.y) / 2f;
         float startX = from.x + NODE_RADIUS;
         float endX = to.x - NODE_RADIUS;
 
@@ -750,7 +868,7 @@ public class FamilyTreeView extends View {
         if (!node.isRoot && node.relationshipDisplayName != null && !node.relationshipDisplayName.isEmpty()) {
             List<String> relationshipLines = wrapText(node.relationshipDisplayName, relationshipTextPaint, MAX_TEXT_WIDTH);
 
-            float relationshipStartY = nameStartY + totalNameHeight + 20; // Reduced spacing
+            float relationshipStartY = nameStartY + totalNameHeight + 20;
             float relationshipLineHeight = relationshipTextPaint.getTextSize() + TEXT_LINE_SPACING;
 
             // Draw background for relationship lines
@@ -783,7 +901,7 @@ public class FamilyTreeView extends View {
                 startY + totalHeight - lineHeight/2 + padding
         );
 
-        canvas.drawRoundRect(backgroundRect, 12, 12, textBackgroundPaint); // Reduced corner radius
+        canvas.drawRoundRect(backgroundRect, 12, 12, textBackgroundPaint);
     }
 
     @Override
@@ -838,7 +956,7 @@ public class FamilyTreeView extends View {
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
             scaleFactor *= detector.getScaleFactor();
-            scaleFactor = Math.max(0.3f, Math.min(scaleFactor, 5.0f)); // Adjusted min scale
+            scaleFactor = Math.max(0.3f, Math.min(scaleFactor, 5.0f));
             invalidate();
             return true;
         }
@@ -880,5 +998,6 @@ public class FamilyTreeView extends View {
 
         public List<FamilyNode> children = new ArrayList<>();
         public List<FamilyNode> parents = new ArrayList<>();
+        public List<FamilyNode> siblings = new ArrayList<>(); // Added siblings list
     }
 }
