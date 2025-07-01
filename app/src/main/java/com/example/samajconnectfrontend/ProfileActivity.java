@@ -346,8 +346,17 @@ public class ProfileActivity extends AppCompatActivity {
         String address = addressEditText.getText().toString().trim();
         String phone = phoneEditText.getText().toString().trim();
 
+        // Validate name
         if (name.isEmpty()) {
             nameEditText.setError("Name is required");
+            nameEditText.requestFocus();
+            return;
+        }
+
+        // Validate Indian mobile number
+        if (!isValidIndianMobileNumber(phone)) {
+            phoneEditText.setError("Please enter a valid 10-digit Indian mobile number");
+            phoneEditText.requestFocus();
             return;
         }
 
@@ -399,6 +408,35 @@ public class ProfileActivity extends AppCompatActivity {
 
         request.setRetryPolicy(new DefaultRetryPolicy(150000, 0, 1.0f));
         requestQueue.add(request);
+    }
+
+    /**
+     * Validates Indian mobile number
+     * - Must be exactly 10 digits
+     * - Must start with 6, 7, 8, or 9
+     * - Only numeric characters allowed
+     */
+    private boolean isValidIndianMobileNumber(String phoneNumber) {
+        // Check if phone number is empty
+        if (phoneNumber == null || phoneNumber.isEmpty()) {
+            return false;
+        }
+
+        // Remove any spaces or special characters
+        String cleanedPhone = phoneNumber.replaceAll("[^0-9]", "");
+
+        // Check if it's exactly 10 digits
+        if (cleanedPhone.length() != 10) {
+            return false;
+        }
+
+        // Check if it starts with valid Indian mobile prefixes (6, 7, 8, 9)
+        char firstDigit = cleanedPhone.charAt(0);
+        if (firstDigit != '6' && firstDigit != '7' && firstDigit != '8' && firstDigit != '9') {
+            return false;
+        }
+
+        return true;
     }
 
     private void openForgotPasswordActivity() {

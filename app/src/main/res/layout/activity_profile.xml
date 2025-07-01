@@ -193,7 +193,7 @@
                         android:layout_marginBottom="12dp"
                         android:background="@drawable/readonly_field_background"
                         android:padding="12dp"
-                        android:hint="abcd"
+                        android:hint="Full Address"
                         android:textColor="#333333"
                         android:textSize="16sp" />
 
@@ -213,9 +213,12 @@
                         android:layout_marginBottom="12dp"
                         android:background="@drawable/readonly_field_background"
                         android:padding="12dp"
-                        android:hint="+123456789"
+                        android:hint="Enter 10-digit mobile number"
                         android:textColor="#333333"
-                        android:textSize="16sp" />
+                        android:textSize="16sp"
+                        android:inputType="phone"
+                        android:maxLength="10"
+                        android:digits="0123456789" />
 
                 </LinearLayout>
 
