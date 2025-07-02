@@ -47,7 +47,7 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
 
     // Common Fields
     private Spinner userTypeSpinner; // Hidden spinner for compatibility
-    private TextView userTypeDisplayTextView; // Display TextView from XML
+    private TextView userTypeDisplayTextView, textViewLogin; // Display TextView from XML
     private EditText nameEditText, emailEditText, passwordEditText, confirmPasswordEditText;
     private Button registerButton;
     private LinearLayout dynamicFieldsLayout, adminFieldsLayout, samajSearchLayout;
@@ -137,6 +137,13 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         suggestionsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         suggestionAdapter = new SamajSuggestionAdapter(filteredSamajs, this);
         suggestionsRecyclerView.setAdapter(suggestionAdapter);
+
+        textViewLogin = findViewById(R.id.textViewLogin);
+        textViewLogin.setOnClickListener(v -> {
+            Intent intent = new Intent(SignupActivity.this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+        });
 
         // Initially hide all dynamic elements
         resetToInitialState();

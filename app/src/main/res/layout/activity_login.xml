@@ -130,6 +130,19 @@
                 app:autoSizeMinTextSize="14sp"
                 app:autoSizeTextType="uniform" />
 
+            <TextView
+                android:id="@+id/textViewSignup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Don't have an Account? Sign Up"
+                android:textColor="#000000"
+                android:textSize="@dimen/label_text_size"
+                android:gravity="center"
+                app:autoSizeMaxTextSize="18sp"
+                app:autoSizeMinTextSize="16sp"
+                app:autoSizeTextType="uniform" />
+
         </LinearLayout>
     </ScrollView>
 

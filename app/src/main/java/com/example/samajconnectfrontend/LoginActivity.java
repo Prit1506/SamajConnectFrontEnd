@@ -27,7 +27,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private EditText emailEditText, passwordEditText;
     private Button loginButton;
-    private TextView forgotPasswordTextView;
+    private TextView forgotPasswordTextView, textViewSignup;
     private RequestQueue requestQueue;
 
     private static final String BASE_URL = "http://10.0.2.2:8080/api/auth/";
@@ -151,6 +151,13 @@ public class LoginActivity extends AppCompatActivity {
         passwordEditText = findViewById(R.id.editTextText1);
         loginButton = findViewById(R.id.button3);
         forgotPasswordTextView = findViewById(R.id.textView6);
+        textViewSignup = findViewById(R.id.textViewSignup);
+
+        textViewSignup.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, SignupActivity.class);
+            startActivity(intent);
+            finish();
+        });
     }
 
     private void setupClickListeners() {
