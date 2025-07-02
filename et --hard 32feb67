@@ -1,0 +1,78 @@
+[33m819d037[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: pull: Fast-forward
+[33m32feb67[m HEAD@{1}: commit: fef
+[33m34067e7[m HEAD@{2}: commit: e
+[33mc9ab219[m HEAD@{3}: commit: ed
+[33m2935726[m HEAD@{4}: commit: changes done which we have discussed
+[33mbf9feb8[m HEAD@{5}: pull: Fast-forward
+[33m3d1f997[m HEAD@{6}: commit: fdfd
+[33m34f880e[m HEAD@{7}: pull: Fast-forward
+[33m27244b8[m HEAD@{8}: reset: moving to HEAD
+[33m27244b8[m HEAD@{9}: pull: Fast-forward
+[33m27e5423[m HEAD@{10}: pull: Fast-forward
+[33m8421874[m HEAD@{11}: reset: moving to HEAD
+[33m8421874[m HEAD@{12}: reset: moving to HEAD
+[33m8421874[m HEAD@{13}: commit: gender
+[33m37cf725[m HEAD@{14}: pull: Fast-forward
+[33md00a2aa[m HEAD@{15}: reset: moving to HEAD
+[33md00a2aa[m HEAD@{16}: reset: moving to HEAD
+[33md00a2aa[m HEAD@{17}: commit: member
+[33mfff0e9d[m HEAD@{18}: commit: lo
+[33m4419d1e[m HEAD@{19}: commit: logout added
+[33mf9dccec[m HEAD@{20}: commit: ds
+[33m90540ab[m HEAD@{21}: commit: dsd
+[33medbbbf6[m HEAD@{22}: commit: dsd
+[33mae44fd7[m HEAD@{23}: pull: Fast-forward
+[33mcaaebb9[m HEAD@{24}: pull: Fast-forward
+[33m6775247[m HEAD@{25}: pull: Fast-forward
+[33m9c252a1[m HEAD@{26}: reset: moving to HEAD
+[33m9c252a1[m HEAD@{27}: pull: Fast-forward
+[33m27594af[m HEAD@{28}: reset: moving to HEAD
+[33m27594af[m HEAD@{29}: commit: fdfef
+[33m05b22ae[m HEAD@{30}: reset: moving to HEAD
+[33m05b22ae[m HEAD@{31}: pull: Fast-forward
+[33m39852b5[m HEAD@{32}: pull: Fast-forward
+[33m858f89c[m HEAD@{33}: reset: moving to HEAD
+[33m858f89c[m HEAD@{34}: pull: Fast-forward
+[33m03a5693[m HEAD@{35}: commit: fg
+[33m9b83f6c[m HEAD@{36}: pull: Fast-forward
+[33mf9cc699[m HEAD@{37}: pull: Fast-forward
+[33me0185df[m HEAD@{38}: reset: moving to HEAD
+[33me0185df[m HEAD@{39}: pull: Fast-forward
+[33m50322e8[m HEAD@{40}: commit: reactions
+[33m294a547[m HEAD@{41}: commit: referesh
+[33m342c2cc[m HEAD@{42}: pull: Fast-forward
+[33m668aa00[m HEAD@{43}: pull: Fast-forward
+[33m4d2b4da[m HEAD@{44}: pull: Fast-forward
+[33m256d39c[m HEAD@{45}: pull: Fast-forward
+[33mca1ab14[m HEAD@{46}: reset: moving to HEAD
+[33mca1ab14[m HEAD@{47}: pull origin main --rebase (finish): returning to refs/heads/main
+[33mca1ab14[m HEAD@{48}: pull origin main --rebase (pick): event Completed
+[33mc73c76e[m HEAD@{49}: pull origin main --rebase (start): checkout c73c76e079a06cbea2634c06f3b44da5f9e4c5ac
+[33mcc2d363[m HEAD@{50}: commit: event Completed
+[33mb5a0551[m HEAD@{51}: pull: Fast-forward
+[33maa56fbc[m HEAD@{52}: pull: Fast-forward
+[33mde0468f[m HEAD@{53}: reset: moving to HEAD
+[33mde0468f[m HEAD@{54}: pull: Fast-forward
+[33m1d7f186[m HEAD@{55}: pull: Fast-forward
+[33me72ad26[m HEAD@{56}: reset: moving to HEAD
+[33me72ad26[m HEAD@{57}: reset: moving to origin/main
+[33m61e4244[m HEAD@{58}: commit (merge): ghg
+[33mb3e8e35[m HEAD@{59}: commit: gfg
+[33md12dcec[m HEAD@{60}: commit: hmgm
+[33m91108e9[m HEAD@{61}: pull: Fast-forward
+[33m5598640[m HEAD@{62}: pull: Fast-forward
+[33m2bfebe7[m HEAD@{63}: commit (merge): harsh chanpura
+[33me1e3c76[m HEAD@{64}: commit: nothing
+[33m9cb187a[m HEAD@{65}: reset: moving to HEAD
+[33m9cb187a[m HEAD@{66}: reset: moving to HEAD
+[33m9cb187a[m HEAD@{67}: commit: hii
+[33m61e3531[m HEAD@{68}: commit: updated signup
+[33m3cded89[m HEAD@{69}: pull: Fast-forward
+[33mf5b3b48[m HEAD@{70}: commit: dashboard
+[33mbb1876a[m HEAD@{71}: commit: backend sign up
+[33m5b564e4[m HEAD@{72}: pull: Fast-forward
+[33m359f0e4[m HEAD@{73}: reset: moving to HEAD
+[33m359f0e4[m HEAD@{74}: commit: database updated
+[33m1c69756[m HEAD@{75}: pull: Fast-forward
+[33m0f2076d[m HEAD@{76}: commit: Hiiiiii
+[33m91c8312[m HEAD@{77}: clone: from https://github.com/Prit1506/SamajConnectFrontEnd

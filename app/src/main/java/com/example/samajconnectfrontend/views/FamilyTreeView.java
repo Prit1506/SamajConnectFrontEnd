@@ -18,7 +18,7 @@ import java.util.*;
 public class FamilyTreeView extends View {
     private static final String TAG = "FamilyTreeView";
 
-    // Drawing constants - REDUCED for better compactness
+    // Drawing constants
     private static final int NODE_RADIUS = 120;
     private static final int NODE_SPACING_X = 400;
     private static final int MIN_NODE_SPACING_X = 600;
@@ -55,13 +55,14 @@ public class FamilyTreeView extends View {
     private Paint rootNodeBorderPaint;
     private Paint levelPaint;
     private Paint textBackgroundPaint;
-    private Paint connectionLinePaint;
-    private Paint siblingLinePaint;
 
     // Data structures
     private List<FamilyNode> familyNodes;
     private Map<Integer, List<FamilyNode>> generationMap;
     private FamilyNode rootNode;
+
+    // NEW: Store actual relationships from database
+    private List<DatabaseRelationship> databaseRelationships;
 
     // Touch and zoom handling
     private GestureDetector gestureDetector;
@@ -95,6 +96,7 @@ public class FamilyTreeView extends View {
     private void init() {
         familyNodes = new ArrayList<>();
         generationMap = new HashMap<>();
+        databaseRelationships = new ArrayList<>();
 
         // Initialize paints
         nodePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -146,20 +148,14 @@ public class FamilyTreeView extends View {
         textBackgroundPaint.setAlpha(240);
         textBackgroundPaint.setShadowLayer(6, 0, 3, Color.parseColor("#30000000"));
 
-        connectionLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        connectionLinePaint.setColor(LINE_COLOR);
-        connectionLinePaint.setStrokeWidth(LINE_WIDTH);
-        connectionLinePaint.setStrokeCap(Paint.Cap.ROUND);
-
-        siblingLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        siblingLinePaint.setColor(Color.parseColor("#FF9800"));
-        siblingLinePaint.setStrokeWidth(LINE_WIDTH);
-        siblingLinePaint.setStrokeCap(Paint.Cap.ROUND);
+        linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        linePaint.setColor(LINE_COLOR);
+        linePaint.setStrokeWidth(LINE_WIDTH);
+        linePaint.setStrokeCap(Paint.Cap.ROUND);
 
         // Initialize gesture detectors
         gestureDetector = new GestureDetector(getContext(), new GestureListener());
         scaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleListener());
-
         setLayerType(View.LAYER_TYPE_HARDWARE, null);
     }
 
@@ -178,6 +174,7 @@ public class FamilyTreeView extends View {
 
             familyNodes.clear();
             generationMap.clear();
+            databaseRelationships.clear();
 
             // Parse root user
             if (treeData.has("rootUser")) {
@@ -190,7 +187,7 @@ public class FamilyTreeView extends View {
                 Log.e(TAG, "No rootUser found in tree data!");
             }
 
-            // Parse generations
+            // Parse generations and extract relationships
             if (treeData.has("generations")) {
                 JSONArray generations = treeData.getJSONArray("generations");
                 Log.d(TAG, "Found " + generations.length() + " generations");
@@ -199,20 +196,28 @@ public class FamilyTreeView extends View {
                     JSONObject generation = generations.getJSONObject(i);
                     int level = generation.getInt("level");
                     JSONArray allMembers = generation.getJSONArray("allMembers");
-
                     List<FamilyNode> levelNodes = new ArrayList<>();
+
                     Log.d(TAG, "Generation " + level + " has " + allMembers.length() + " members");
 
                     for (int j = 0; j < allMembers.length(); j++) {
                         JSONObject member = allMembers.getJSONObject(j);
                         Log.d(TAG, "Processing member: " + member.toString());
-
                         FamilyNode node = createNodeFromJson(member, false);
                         familyNodes.add(node);
                         levelNodes.add(node);
+
+                        // IMPORTANT: Store the actual database relationship
+                        DatabaseRelationship dbRel = new DatabaseRelationship();
+                        dbRel.fromUserId = rootNode.userId; // Root user
+                        dbRel.toUserId = node.userId; // Related user
+                        dbRel.relationshipType = node.relationshipDisplayName;
+                        dbRel.generationLevel = node.generationLevel;
+                        databaseRelationships.add(dbRel);
+
+                        Log.d(TAG, "Added relationship: " + rootNode.userId + " -> " + node.userId + " (" + node.relationshipDisplayName + ")");
                         Log.d(TAG, "Added node: " + node.name + " (ID: " + node.userId + ") (" + node.relationshipDisplayName + ") at level " + level + " side: " + node.relationshipSide);
                     }
-
                     generationMap.put(level, levelNodes);
                 }
             } else {
@@ -220,23 +225,31 @@ public class FamilyTreeView extends View {
             }
 
             Log.d(TAG, "Total nodes created: " + familyNodes.size());
+            Log.d(TAG, "Total database relationships: " + databaseRelationships.size());
             Log.d(TAG, "Root node: " + (rootNode != null ? rootNode.name + " (ID: " + rootNode.userId + ")" : "NULL"));
 
-            // Calculate positions with anti-overlap algorithm
-            calculateOptimizedNodePositions();
+            // Log all database relationships
+            logDatabaseRelationships();
 
-            // FIXED: Establish proper relationships for connection drawing
-            establishProperNodeRelationships();
+            // Calculate positions
+            calculateOptimizedNodePositions();
 
             // Center the view on root node
             centerOnRoot();
-
             invalidate();
-            Log.d(TAG, "=== FAMILY TREE DATA LOADED ===");
 
+            Log.d(TAG, "=== FAMILY TREE DATA LOADED ===");
         } catch (JSONException e) {
             Log.e(TAG, "Error parsing family tree data", e);
         }
+    }
+
+    private void logDatabaseRelationships() {
+        Log.d(TAG, "=== DATABASE RELATIONSHIPS ===");
+        for (DatabaseRelationship rel : databaseRelationships) {
+            Log.d(TAG, "Relationship: " + rel.fromUserId + " -> " + rel.toUserId + " (" + rel.relationshipType + ") Level: " + rel.generationLevel);
+        }
+        Log.d(TAG, "===============================");
     }
 
     private FamilyNode createNodeFromJson(JSONObject jsonData, boolean isRoot) throws JSONException {
@@ -253,14 +266,13 @@ public class FamilyTreeView extends View {
             node.generationLevel = jsonData.optInt("generationLevel", 0);
             node.generationName = jsonData.optString("generationName", "");
             node.relationshipSide = jsonData.optString("relationshipSide", "");
-
-            Log.d(TAG, "  - Relationship: " + node.relationshipDisplayName);
-            Log.d(TAG, "  - Generation Level: " + node.generationLevel);
-            Log.d(TAG, "  - Generation Name: " + node.generationName);
-            Log.d(TAG, "  - Relationship Side: " + node.relationshipSide);
+            Log.d(TAG, " - Relationship: " + node.relationshipDisplayName);
+            Log.d(TAG, " - Generation Level: " + node.generationLevel);
+            Log.d(TAG, " - Generation Name: " + node.generationName);
+            Log.d(TAG, " - Relationship Side: " + node.relationshipSide);
         } else {
             node.generationLevel = 0;
-            Log.d(TAG, "  - This is the ROOT user");
+            Log.d(TAG, " - This is the ROOT user");
         }
 
         // Handle profile image
@@ -272,7 +284,7 @@ public class FamilyTreeView extends View {
                     Bitmap originalBitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
                     if (originalBitmap != null) {
                         node.profileBitmap = createHighQualityCircularBitmap(originalBitmap);
-                        Log.d(TAG, "  - Profile image loaded successfully");
+                        Log.d(TAG, " - Profile image loaded successfully");
                     }
                 } catch (Exception e) {
                     Log.e(TAG, "Error decoding profile image for " + node.name, e);
@@ -287,17 +299,14 @@ public class FamilyTreeView extends View {
         int desiredSize = (NODE_RADIUS - PROFILE_MARGIN) * 2;
         Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, desiredSize, desiredSize, true);
         Bitmap output = Bitmap.createBitmap(desiredSize, desiredSize, Bitmap.Config.ARGB_8888);
-
         Canvas canvas = new Canvas(output);
         Paint paint = new Paint();
         paint.setAntiAlias(true);
         paint.setFilterBitmap(true);
         paint.setDither(true);
-
         canvas.drawCircle(desiredSize / 2f, desiredSize / 2f, desiredSize / 2f, paint);
         paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
         canvas.drawBitmap(scaledBitmap, 0, 0, paint);
-
         return output;
     }
 
@@ -315,10 +324,9 @@ public class FamilyTreeView extends View {
         // Sort generations by level
         List<Integer> sortedLevels = new ArrayList<>(generationMap.keySet());
         Collections.sort(sortedLevels);
-
         Log.d(TAG, "Generation levels found: " + sortedLevels.toString());
 
-        // Position each generation with anti-overlap logic
+        // Position each generation
         for (int level : sortedLevels) {
             List<FamilyNode> levelNodes = generationMap.get(level);
             if (levelNodes == null || levelNodes.isEmpty()) continue;
@@ -345,20 +353,16 @@ public class FamilyTreeView extends View {
 
         Map<String, List<FamilyNode>> sideGroups = groupNodesBySide(nodes);
         int requiredSpacing = calculateMinimumSpacing(nodes);
-
-        List<String> sides = new ArrayList<>(sideGroups.keySet());
         int totalNodes = nodes.size();
 
         if (totalNodes == 1) {
             FamilyNode singleNode = nodes.get(0);
-
             if (level == 0) {
                 singleNode.x = centerX + (NODE_SPACING_X);
                 Log.d(TAG, "Single level 0 node " + singleNode.name + " positioned to the right of root");
             } else {
                 singleNode.x = centerX;
             }
-
             singleNode.y = yPosition;
             Log.d(TAG, "Single node " + singleNode.name + " positioned at: (" + singleNode.x + ", " + singleNode.y + ")");
             return;
@@ -366,7 +370,6 @@ public class FamilyTreeView extends View {
 
         int totalWidth = (totalNodes - 1) * requiredSpacing;
         int startX;
-
         if (level == 0) {
             startX = centerX + (NODE_SPACING_X / 2) - totalWidth / 2;
             Log.d(TAG, "Level 0 (same generation) - starting X position: " + startX);
@@ -377,7 +380,6 @@ public class FamilyTreeView extends View {
 
         int currentIndex = 0;
         String[] sideOrder = {"PATERNAL", "DIRECT", "MATERNAL", "SPOUSE_FAMILY", "STEP_FAMILY"};
-
         for (String side : sideOrder) {
             List<FamilyNode> sideNodes = sideGroups.get(side);
             if (sideNodes == null || sideNodes.isEmpty()) continue;
@@ -385,9 +387,7 @@ public class FamilyTreeView extends View {
             for (FamilyNode node : sideNodes) {
                 node.x = startX + (currentIndex * requiredSpacing);
                 node.y = yPosition;
-
                 Log.d(TAG, "Node " + node.name + " (" + node.relationshipDisplayName + ") positioned at: (" + node.x + ", " + node.y + ") - Side: " + side + " - Level: " + level);
-
                 currentIndex++;
             }
         }
@@ -395,11 +395,9 @@ public class FamilyTreeView extends View {
 
     private int calculateMinimumSpacing(List<FamilyNode> nodes) {
         int maxTextWidth = 0;
-
         for (FamilyNode node : nodes) {
             String fullName = node.name != null ? node.name : "";
             List<String> nameLines = wrapText(fullName, textPaint, MAX_TEXT_WIDTH);
-
             int maxLineWidth = 0;
             for (String line : nameLines) {
                 int lineWidth = (int) textPaint.measureText(line);
@@ -426,7 +424,6 @@ public class FamilyTreeView extends View {
     private Map<String, List<FamilyNode>> groupNodesBySide(List<FamilyNode> nodes) {
         Map<String, List<FamilyNode>> groups = new LinkedHashMap<>();
         String[] sideOrder = {"PATERNAL", "DIRECT", "MATERNAL", "SPOUSE_FAMILY", "STEP_FAMILY"};
-
         for (String side : sideOrder) {
             groups.put(side, new ArrayList<>());
         }
@@ -454,11 +451,9 @@ public class FamilyTreeView extends View {
 
         String[] words = text.split("\\s+");
         StringBuilder currentLine = new StringBuilder();
-
         for (String word : words) {
             String testLine = currentLine.length() == 0 ? word : currentLine + " " + word;
             float testWidth = paint.measureText(testLine);
-
             if (testWidth <= maxWidth) {
                 currentLine = new StringBuilder(testLine);
             } else {
@@ -470,137 +465,10 @@ public class FamilyTreeView extends View {
                 }
             }
         }
-
         if (currentLine.length() > 0) {
             lines.add(currentLine.toString());
         }
-
         return lines;
-    }
-
-    /**
-     * FIXED: Establish proper relationships based on generation levels and relationship types
-     */
-    private void establishProperNodeRelationships() {
-        Log.d(TAG, "=== ESTABLISHING NODE RELATIONSHIPS ===");
-
-        // Clear existing relationships
-        for (FamilyNode node : familyNodes) {
-            node.children = new ArrayList<>();
-            node.parents = new ArrayList<>();
-            node.siblings = new ArrayList<>();
-        }
-
-        if (rootNode == null) return;
-
-        // Establish parent-child relationships based on generation levels
-        for (Map.Entry<Integer, List<FamilyNode>> entry : generationMap.entrySet()) {
-            int level = entry.getKey();
-            List<FamilyNode> levelNodes = entry.getValue();
-
-            for (FamilyNode node : levelNodes) {
-                if (level < 0) {
-                    // This node is an ancestor of root (parent, grandparent, etc.)
-                    establishAncestorRelationship(rootNode, node, Math.abs(level));
-                } else if (level > 0) {
-                    // This node is a descendant of root (child, grandchild, etc.)
-                    establishDescendantRelationship(rootNode, node, level);
-                } else if (level == 0) {
-                    // Same generation - could be sibling, spouse, cousin, etc.
-                    establishSameGenerationRelationship(rootNode, node);
-                }
-            }
-        }
-
-        // Establish sibling relationships within same generation levels
-        for (List<FamilyNode> levelNodes : generationMap.values()) {
-            establishSiblingRelationships(levelNodes);
-        }
-
-        // Log established relationships
-        logEstablishedRelationships();
-    }
-
-    private void establishAncestorRelationship(FamilyNode descendant, FamilyNode ancestor, int generationGap) {
-        Log.d(TAG, "Establishing ancestor relationship: " + ancestor.name + " -> " + descendant.name + " (gap: " + generationGap + ")");
-
-        if (generationGap == 1) {
-            // Direct parent
-            ancestor.children.add(descendant);
-            descendant.parents.add(ancestor);
-        } else {
-            // Grandparent or higher - establish indirect relationship
-            ancestor.children.add(descendant);
-            descendant.parents.add(ancestor);
-        }
-    }
-
-    private void establishDescendantRelationship(FamilyNode ancestor, FamilyNode descendant, int generationGap) {
-        Log.d(TAG, "Establishing descendant relationship: " + ancestor.name + " -> " + descendant.name + " (gap: " + generationGap + ")");
-
-        if (generationGap == 1) {
-            // Direct child
-            ancestor.children.add(descendant);
-            descendant.parents.add(ancestor);
-        } else {
-            // Grandchild or lower - establish indirect relationship
-            ancestor.children.add(descendant);
-            descendant.parents.add(ancestor);
-        }
-    }
-
-    private void establishSameGenerationRelationship(FamilyNode root, FamilyNode peer) {
-        Log.d(TAG, "Establishing same generation relationship: " + root.name + " <-> " + peer.name + " (" + peer.relationshipDisplayName + ")");
-
-        // For same generation, they could be siblings, spouses, cousins, etc.
-        // We'll treat them as connected peers
-        root.siblings.add(peer);
-        peer.siblings.add(root);
-    }
-
-    private void establishSiblingRelationships(List<FamilyNode> levelNodes) {
-        if (levelNodes.size() < 2) return;
-
-        // Group by relationship side to identify actual siblings
-        Map<String, List<FamilyNode>> sideGroups = groupNodesBySide(levelNodes);
-
-        for (List<FamilyNode> sideNodes : sideGroups.values()) {
-            if (sideNodes.size() < 2) continue;
-
-            // Establish sibling relationships within the same side
-            for (int i = 0; i < sideNodes.size(); i++) {
-                for (int j = i + 1; j < sideNodes.size(); j++) {
-                    FamilyNode node1 = sideNodes.get(i);
-                    FamilyNode node2 = sideNodes.get(j);
-
-                    if (!node1.siblings.contains(node2)) {
-                        node1.siblings.add(node2);
-                        node2.siblings.add(node1);
-                        Log.d(TAG, "Established sibling relationship: " + node1.name + " <-> " + node2.name);
-                    }
-                }
-            }
-        }
-    }
-
-    private void logEstablishedRelationships() {
-        Log.d(TAG, "=== ESTABLISHED RELATIONSHIPS ===");
-        for (FamilyNode node : familyNodes) {
-            Log.d(TAG, "Node: " + node.name + " (ID: " + node.userId + ")");
-            Log.d(TAG, "  Parents: " + node.parents.size());
-            for (FamilyNode parent : node.parents) {
-                Log.d(TAG, "    - " + parent.name);
-            }
-            Log.d(TAG, "  Children: " + node.children.size());
-            for (FamilyNode child : node.children) {
-                Log.d(TAG, "    - " + child.name);
-            }
-            Log.d(TAG, "  Siblings: " + node.siblings.size());
-            for (FamilyNode sibling : node.siblings) {
-                Log.d(TAG, "    - " + sibling.name);
-            }
-        }
-        Log.d(TAG, "================================");
     }
 
     private void logNodePositions() {
@@ -608,7 +476,6 @@ public class FamilyTreeView extends View {
         if (rootNode != null) {
             Log.d(TAG, "ROOT: " + rootNode.name + " at (" + rootNode.x + ", " + rootNode.y + ")");
         }
-
         for (Map.Entry<Integer, List<FamilyNode>> entry : generationMap.entrySet()) {
             int level = entry.getKey();
             List<FamilyNode> nodes = entry.getValue();
@@ -631,15 +498,16 @@ public class FamilyTreeView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
         canvas.save();
         canvas.translate(translateX, translateY);
         canvas.scale(scaleFactor, scaleFactor);
 
         drawLevelIndicators(canvas);
-        drawConnections(canvas);
-        drawNodes(canvas);
 
+        // CORRECTED: Draw connections based ONLY on database relationships
+        drawDatabaseRelationshipConnections(canvas);
+
+        drawNodes(canvas);
         canvas.restore();
     }
 
@@ -650,7 +518,6 @@ public class FamilyTreeView extends View {
         Collections.sort(sortedLevels);
 
         int leftMargin = 80;
-
         canvas.drawText("You", leftMargin, rootNode.y + 10, levelPaint);
 
         for (int level : sortedLevels) {
@@ -659,14 +526,12 @@ public class FamilyTreeView extends View {
 
             String levelText = getLevelDisplayName(level);
             float yPosition;
-
             if (level == 0) {
                 yPosition = rootNode.y + 30;
                 levelText = "Same Generation";
             } else {
                 yPosition = rootNode.y + (level * NODE_SPACING_Y) + 10;
             }
-
             canvas.drawText(levelText, leftMargin, yPosition, levelPaint);
         }
     }
@@ -680,127 +545,75 @@ public class FamilyTreeView extends View {
             case 1: return "Children";
             case 2: return "Grandchildren";
             case 3: return "Great Grandchildren";
-            default:
-                return level < 0 ? "Generation " + Math.abs(level) + " Up" : "Generation " + level + " Down";
+            default: return level < 0 ? "Generation " + Math.abs(level) + " Up" : "Generation " + level + " Down";
         }
     }
 
     /**
-     * FIXED: Improved connection drawing logic
+     * CORRECTED: Draw connections based ONLY on actual database relationships
      */
-    private void drawConnections(Canvas canvas) {
-        if (rootNode == null) return;
+    private void drawDatabaseRelationshipConnections(Canvas canvas) {
+        if (rootNode == null || databaseRelationships.isEmpty()) return;
 
-        Log.d(TAG, "=== DRAWING CONNECTIONS ===");
+        Log.d(TAG, "=== DRAWING DATABASE RELATIONSHIP CONNECTIONS ===");
 
-        // Draw parent-child connections
-        drawParentChildConnections(canvas);
+        // Draw connections ONLY for relationships that exist in the database
+        for (DatabaseRelationship dbRel : databaseRelationships) {
+            FamilyNode fromNode = findNodeByUserId(dbRel.fromUserId);
+            FamilyNode toNode = findNodeByUserId(dbRel.toUserId);
 
-        // Draw sibling connections
-        drawSiblingConnectionsImproved(canvas);
+            if (fromNode != null && toNode != null) {
+                drawStraightLine(canvas, fromNode, toNode);
+                Log.d(TAG, "Drew database relationship connection: " + fromNode.name + " -> " + toNode.name + " (" + dbRel.relationshipType + ")");
+            } else {
+                Log.w(TAG, "Could not find nodes for relationship: " + dbRel.fromUserId + " -> " + dbRel.toUserId);
+            }
+        }
 
-        Log.d(TAG, "=== CONNECTIONS DRAWN ===");
+        Log.d(TAG, "=== DATABASE RELATIONSHIP CONNECTIONS DRAWN ===");
     }
 
-    private void drawParentChildConnections(Canvas canvas) {
-        Log.d(TAG, "Drawing parent-child connections...");
-
-        // Draw connections from root to all its children and parents
-        for (FamilyNode child : rootNode.children) {
-            drawSmoothConnectionLine(canvas, rootNode, child);
-            Log.d(TAG, "Drew connection: " + rootNode.name + " -> " + child.name);
+    /**
+     * Find a node by user ID
+     */
+    private FamilyNode findNodeByUserId(Long userId) {
+        if (rootNode != null && rootNode.userId.equals(userId)) {
+            return rootNode;
         }
 
-        for (FamilyNode parent : rootNode.parents) {
-            drawSmoothConnectionLine(canvas, parent, rootNode);
-            Log.d(TAG, "Drew connection: " + parent.name + " -> " + rootNode.name);
-        }
-
-        // Draw connections between other family members
         for (List<FamilyNode> levelNodes : generationMap.values()) {
             for (FamilyNode node : levelNodes) {
-                // Draw connections to children
-                for (FamilyNode child : node.children) {
-                    if (!child.equals(rootNode)) { // Avoid duplicate lines to root
-                        drawSmoothConnectionLine(canvas, node, child);
-                        Log.d(TAG, "Drew connection: " + node.name + " -> " + child.name);
-                    }
+                if (node.userId.equals(userId)) {
+                    return node;
                 }
             }
         }
+        return null;
     }
 
-    private void drawSiblingConnectionsImproved(Canvas canvas) {
-        Log.d(TAG, "Drawing sibling connections...");
+    /**
+     * Draw a simple straight line between two nodes
+     */
+    private void drawStraightLine(Canvas canvas, FamilyNode from, FamilyNode to) {
+        // Calculate connection points on the edge of the circles
+        float dx = to.x - from.x;
+        float dy = to.y - from.y;
+        float distance = (float) Math.sqrt(dx * dx + dy * dy);
 
-        // Draw sibling connections for each generation level
-        for (Map.Entry<Integer, List<FamilyNode>> entry : generationMap.entrySet()) {
-            int level = entry.getKey();
-            List<FamilyNode> levelNodes = entry.getValue();
+        if (distance == 0) return; // Same position
 
-            if (levelNodes.size() > 1) {
-                Log.d(TAG, "Drawing sibling connections for level " + level + " with " + levelNodes.size() + " nodes");
-                drawSiblingConnections(canvas, levelNodes);
-            }
-        }
+        // Normalize direction
+        float dirX = dx / distance;
+        float dirY = dy / distance;
 
-        // Special handling for same generation (level 0) - draw horizontal connections
-        List<FamilyNode> sameGenNodes = generationMap.get(0);
-        if (sameGenNodes != null && !sameGenNodes.isEmpty()) {
-            Log.d(TAG, "Drawing same generation connections...");
-            for (FamilyNode node : sameGenNodes) {
-                drawSameGenerationConnection(canvas, rootNode, node);
-                Log.d(TAG, "Drew same generation connection: " + rootNode.name + " <-> " + node.name);
-            }
-        }
-    }
+        // Calculate start and end points on circle edges
+        float startX = from.x + dirX * NODE_RADIUS;
+        float startY = from.y + dirY * NODE_RADIUS;
+        float endX = to.x - dirX * NODE_RADIUS;
+        float endY = to.y - dirY * NODE_RADIUS;
 
-    private void drawSmoothConnectionLine(Canvas canvas, FamilyNode from, FamilyNode to) {
-        Path path = new Path();
-
-        float startY = from.y + (from.y < to.y ? NODE_RADIUS : -NODE_RADIUS);
-        float endY = to.y + (to.y < from.y ? NODE_RADIUS : -NODE_RADIUS);
-        float controlOffset = Math.abs(startY - endY) * 0.6f;
-
-        path.moveTo(from.x, startY);
-        path.cubicTo(
-                from.x, startY + (startY < endY ? controlOffset : -controlOffset),
-                to.x, endY + (endY > startY ? -controlOffset : controlOffset),
-                to.x, endY
-        );
-
-        canvas.drawPath(path, connectionLinePaint);
-    }
-
-    private void drawSiblingConnections(Canvas canvas, List<FamilyNode> nodes) {
-        if (nodes.size() < 2) return;
-
-        List<FamilyNode> sortedNodes = new ArrayList<>(nodes);
-        sortedNodes.sort((a, b) -> Float.compare(a.x, b.x));
-
-        FamilyNode first = sortedNodes.get(0);
-        FamilyNode last = sortedNodes.get(sortedNodes.size() - 1);
-        float y = first.y - NODE_RADIUS - 40;
-
-        // Draw horizontal line connecting all siblings
-        canvas.drawLine(first.x, y, last.x, y, siblingLinePaint);
-
-        // Draw vertical lines from horizontal line to each sibling
-        for (FamilyNode node : sortedNodes) {
-            canvas.drawLine(node.x, y, node.x, node.y - NODE_RADIUS, siblingLinePaint);
-        }
-    }
-
-    private void drawSameGenerationConnection(Canvas canvas, FamilyNode from, FamilyNode to) {
-        // Draw horizontal line for same generation (siblings, spouses, etc.)
-        float startX = from.x + NODE_RADIUS;
-        float endX = to.x - NODE_RADIUS;
-
-        Path path = new Path();
-        path.moveTo(startX, from.y);
-        path.lineTo(endX, to.y);
-
-        canvas.drawPath(path, siblingLinePaint);
+        // Draw the line
+        canvas.drawLine(startX, startY, endX, endY, linePaint);
     }
 
     private void drawNodes(Canvas canvas) {
@@ -842,7 +655,6 @@ public class FamilyTreeView extends View {
         // Draw name with multi-line support
         String fullName = node.name != null ? node.name : "";
         List<String> nameLines = wrapText(fullName, textPaint, MAX_TEXT_WIDTH);
-
         float nameStartY = node.y + NODE_RADIUS + NAME_MARGIN;
         float lineHeight = textPaint.getTextSize() + TEXT_LINE_SPACING;
 
@@ -867,7 +679,6 @@ public class FamilyTreeView extends View {
         // Draw relationship text with proper spacing
         if (!node.isRoot && node.relationshipDisplayName != null && !node.relationshipDisplayName.isEmpty()) {
             List<String> relationshipLines = wrapText(node.relationshipDisplayName, relationshipTextPaint, MAX_TEXT_WIDTH);
-
             float relationshipStartY = nameStartY + totalNameHeight + 20;
             float relationshipLineHeight = relationshipTextPaint.getTextSize() + TEXT_LINE_SPACING;
 
@@ -893,14 +704,12 @@ public class FamilyTreeView extends View {
 
         float padding = TEXT_PADDING;
         float totalHeight = lines.size() * lineHeight;
-
         RectF backgroundRect = new RectF(
                 centerX - maxWidth/2 - padding,
                 startY - lineHeight/2 - padding,
                 centerX + maxWidth/2 + padding,
                 startY + totalHeight - lineHeight/2 + padding
         );
-
         canvas.drawRoundRect(backgroundRect, 12, 12, textBackgroundPaint);
     }
 
@@ -923,7 +732,6 @@ public class FamilyTreeView extends View {
         public boolean onSingleTapUp(MotionEvent e) {
             float canvasX = (e.getX() - translateX) / scaleFactor;
             float canvasY = (e.getY() - translateY) / scaleFactor;
-
             FamilyNode touchedNode = findNodeAt(canvasX, canvasY);
             if (touchedNode != null && nodeClickListener != null) {
                 nodeClickListener.onNodeClick(touchedNode);
@@ -936,7 +744,6 @@ public class FamilyTreeView extends View {
         public void onLongPress(MotionEvent e) {
             float canvasX = (e.getX() - translateX) / scaleFactor;
             float canvasY = (e.getY() - translateY) / scaleFactor;
-
             FamilyNode touchedNode = findNodeAt(canvasX, canvasY);
             if (touchedNode != null && nodeLongClickListener != null) {
                 nodeLongClickListener.onNodeLongClick(touchedNode);
@@ -966,7 +773,6 @@ public class FamilyTreeView extends View {
         if (rootNode != null && isPointInNode(x, y, rootNode)) {
             return rootNode;
         }
-
         for (List<FamilyNode> levelNodes : generationMap.values()) {
             for (FamilyNode node : levelNodes) {
                 if (isPointInNode(x, y, node)) {
@@ -982,6 +788,14 @@ public class FamilyTreeView extends View {
         return distance <= NODE_RADIUS;
     }
 
+    // NEW: Class to represent actual database relationships
+    public static class DatabaseRelationship {
+        public Long fromUserId;
+        public Long toUserId;
+        public String relationshipType;
+        public int generationLevel;
+    }
+
     public static class FamilyNode {
         public Long userId;
         public String name;
@@ -992,12 +806,7 @@ public class FamilyTreeView extends View {
         public String relationshipSide;
         public boolean isRoot = false;
         public Bitmap profileBitmap;
-
         public float x;
         public float y;
-
-        public List<FamilyNode> children = new ArrayList<>();
-        public List<FamilyNode> parents = new ArrayList<>();
-        public List<FamilyNode> siblings = new ArrayList<>(); // Added siblings list
     }
 }

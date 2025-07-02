@@ -1439,7 +1439,6 @@ public class MembersActivity extends AppCompatActivity {
             }
         }
     }
-
     public static class SamajMemberSearchAdapter extends RecyclerView.Adapter<SamajMemberSearchAdapter.ViewHolder> {
         private List<SamajMember> members;
         private OnSamajMemberSelectedListener listener;
