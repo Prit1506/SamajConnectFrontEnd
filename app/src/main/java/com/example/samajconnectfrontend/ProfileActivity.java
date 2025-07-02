@@ -134,13 +134,13 @@ public class ProfileActivity extends AppCompatActivity {
         // Priority: Current bitmap > Base64 > Default image
         if (currentProfileBitmap != null) {
             // Use current bitmap (from gallery/camera selection)
-            dialog = new FullScreenImageDialog(this, currentProfileBitmap, R.drawable.profile);
+            dialog = new FullScreenImageDialog(this, currentProfileBitmap, R.drawable.ic_person_placeholder);
         } else if (currentProfileImageBase64 != null && !currentProfileImageBase64.isEmpty()) {
             // Use Base64 image (from server)
-            dialog = new FullScreenImageDialog(this, currentProfileImageBase64, R.drawable.profile);
+            dialog = new FullScreenImageDialog(this, currentProfileImageBase64, R.drawable.ic_person_placeholder);
         } else {
             // Show default image in fullscreen
-            dialog = new FullScreenImageDialog(this, (String) null, R.drawable.profile);
+            dialog = new FullScreenImageDialog(this, (String) null, R.drawable.ic_person_placeholder);
         }
 
         dialog.show();

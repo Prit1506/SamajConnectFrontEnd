@@ -77,7 +77,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_margin="4dp"
-            android:text="Approve Requests"
+            android:text="Requests"
             android:textSize="12sp"
             android:background="@drawable/button_selector"
             android:textColor="#ffffff" />
