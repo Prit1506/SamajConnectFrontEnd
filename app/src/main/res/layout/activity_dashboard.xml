@@ -49,7 +49,7 @@
                             android:id="@+id/imageview100"
                             android:layout_width="110dp"
                             android:layout_height="110dp"
-                            android:layout_marginEnd="32dp"
+                            android:layout_marginEnd="48dp"
                             app:cardCornerRadius="75dp"
                             app:cardElevation="4dp"
                             app:layout_constraintBottom_toBottomOf="parent"
@@ -85,7 +85,8 @@
                             android:id="@+id/textView9"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="32dp"
+                            android:layout_marginStart="48dp"
+                            android:layout_marginTop="16dp"
                             android:text="Hello,"
                             android:textColor="#FFFFFF"
                             android:textSize="18sp"
@@ -137,7 +138,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_margin="12dp"
-                            android:layout_weight="0.333"
+                            android:layout_weight="0.4"
                             android:background="#0b8d85"
                             android:orientation="vertical">
 
@@ -146,6 +147,7 @@
                                 android:layout_width="85dp"
                                 android:layout_height="65dp"
                                 android:layout_margin="8dp"
+                                android:layout_gravity="center"
                                 android:src="@drawable/voice_call"/>
 
                             <TextView
@@ -161,11 +163,29 @@
                         </LinearLayout>
 
                         <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_margin="8dp"
+                            android:layout_weight="0.2"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <ImageView
+                                android:id="@+id/imageView11"
+                                android:layout_width="85dp"
+                                android:layout_height="65dp"
+                                android:layout_margin="8dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/logo" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
                             android:id="@+id/membersLinearLayout"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_margin="12dp"
-                            android:layout_weight="0.333"
+                            android:layout_weight="0.4"
                             android:background="#0b8d85"
                             android:orientation="vertical">
 
@@ -174,7 +194,8 @@
                                 android:layout_width="85dp"
                                 android:layout_height="65dp"
                                 android:layout_margin="8dp"
-                                android:src="@drawable/member" />
+                                android:src="@drawable/member"
+                                android:layout_gravity="center"/>
 
                             <TextView
                                 android:id="@+id/textView13"
@@ -188,32 +209,7 @@
 
                         </LinearLayout>
 
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_margin="12dp"
-                            android:layout_weight="0.333"
-                            android:background="#0b8d85"
-                            android:orientation="vertical">
 
-                            <ImageView
-                                android:id="@+id/imageView11"
-                                android:layout_width="85dp"
-                                android:layout_height="65dp"
-                                android:layout_margin="8dp"
-                                android:src="@drawable/notification" />
-
-                            <TextView
-                                android:id="@+id/textView14"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginBottom="4dp"
-                                android:text="Group Chat"
-                                android:textAlignment="center"
-                                android:textColor="@color/white"
-                                android:textStyle="bold|italic" />
-
-                        </LinearLayout>
                     </LinearLayout>
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
@@ -292,9 +288,10 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp"
-                        android:layout_marginStart="5dp"
+                        android:layout_marginBottom="0dp"
+                        android:layout_marginStart="8dp"
                         android:text="Upcoming Events"
+                        android:layout_marginTop="10dp"
                         android:textColor="#FF0000"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -304,8 +301,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:clipToPadding="false"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
+                        android:paddingStart="0dp"
+                        android:paddingEnd="0dp"
                         tools:listitem="@layout/item_event_slider" />
 
                 </LinearLayout>
@@ -314,10 +311,11 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_margin="32dp"
+                    android:layout_marginTop="-10dp"
+                    android:layout_marginHorizontal="32dp"
                     android:orientation="vertical">
 
-                    <LinearLayout
+                    <!--<LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:orientation="horizontal">
@@ -457,7 +455,7 @@
                                 android:textColor="#2e3d6d"
                                 android:textStyle="bold" />
                         </LinearLayout>
-                    </LinearLayout>
+                    </LinearLayout>-->
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -485,7 +483,7 @@
                                     app:layout_constraintEnd_toEndOf="parent"
                                     app:layout_constraintStart_toStartOf="parent"
                                     app:layout_constraintTop_toTopOf="parent"
-                                    app:srcCompat="@drawable/ic_5" />
+                                    app:srcCompat="@drawable/ic_1" />
                             </androidx.constraintlayout.widget.ConstraintLayout>
 
                             <TextView
@@ -493,7 +491,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
-                                android:text="Directory"
+                                android:text="All Members"
                                 android:textAlignment="center"
                                 android:textColor="#2e3d6d"
                                 android:textStyle="bold" />
@@ -527,7 +525,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
-                                android:text="Announcements"
+                                android:text="Gallery"
                                 android:textAlignment="center"
                                 android:textColor="#2e3d6d"
                                 android:textStyle="bold" />
@@ -561,7 +559,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
-                                android:text="Donations"
+                                android:text="About Us"
                                 android:textAlignment="center"
                                 android:textColor="#2e3d6d"
                                 android:textStyle="bold" />
