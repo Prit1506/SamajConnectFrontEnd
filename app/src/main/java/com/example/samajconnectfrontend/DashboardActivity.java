@@ -10,6 +10,7 @@ import android.os.Looper;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -57,7 +58,8 @@ public class DashboardActivity extends AppCompatActivity implements SearchManage
 
     private TextView userNameTextView, samajNameTextView, profileTextView;
     private ImageView profileImageView;
-    private LinearLayout eventsLinearLayout, membersLinearLayout, logoutLinearLayout;
+    private LinearLayout eventsLinearLayout, membersLinearLayout, logoutLinearLayout ;
+    private ConstraintLayout memberlist;
     private SwipeRefreshLayout swipeRefreshLayout;
     private ScrollView mainScrollView;
 
@@ -122,6 +124,7 @@ public class DashboardActivity extends AppCompatActivity implements SearchManage
         mainScrollView = findViewById(R.id.mainScrollView);
         profileTextView = findViewById(R.id.txtProfile);
         logoutLinearLayout = findViewById(R.id.logoutLinearLayout);
+        memberlist = findViewById(R.id.Memberlayout);
         membersLinearLayout = findViewById(R.id.membersLinearLayout);
 
         eventsLinearLayout.setOnClickListener(view ->
@@ -135,6 +138,8 @@ public class DashboardActivity extends AppCompatActivity implements SearchManage
 
         // Set up logout click listener
         logoutLinearLayout.setOnClickListener(view -> showLogoutDialog());
+        memberlist.setOnClickListener(view ->
+                startActivity(new Intent(DashboardActivity.this, MemberListActivity.class)));
     }
 
     private void setupSearchFunctionality() {
