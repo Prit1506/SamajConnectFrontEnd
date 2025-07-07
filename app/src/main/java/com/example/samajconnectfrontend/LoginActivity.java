@@ -3,9 +3,13 @@ package com.example.samajconnectfrontend;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.method.HideReturnsTransformationMethod;
+import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,6 +33,9 @@ public class LoginActivity extends AppCompatActivity {
     private Button loginButton;
     private TextView forgotPasswordTextView, textViewSignup;
     private RequestQueue requestQueue;
+
+    private ImageView imageViewTogglePassword;
+    private boolean isPasswordVisible = false;
 
     private static final String BASE_URL = "http://10.0.2.2:8080/api/auth/";
     private static final String LOGIN_URL = BASE_URL + "login";
@@ -153,10 +160,38 @@ public class LoginActivity extends AppCompatActivity {
         forgotPasswordTextView = findViewById(R.id.textView6);
         textViewSignup = findViewById(R.id.textViewSignup);
 
+        imageViewTogglePassword = findViewById(R.id.imageViewTogglePassword);
+
+        // Set up password toggle functionality
+        setupPasswordToggle();
+
+
         textViewSignup.setOnClickListener(v -> {
             Intent intent = new Intent(LoginActivity.this, SignupActivity.class);
             startActivity(intent);
             finish();
+        });
+    }
+
+    private void setupPasswordToggle() {
+        imageViewTogglePassword.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (isPasswordVisible) {
+                    // Hide password
+                    passwordEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                    imageViewTogglePassword.setImageResource(R.drawable.ic_eye_off);
+                    isPasswordVisible = false;
+                } else {
+                    // Show password
+                    passwordEditText.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
+                    imageViewTogglePassword.setImageResource(R.drawable.ic_eye_on);
+                    isPasswordVisible = true;
+                }
+
+                // Move cursor to end
+                passwordEditText.setSelection(passwordEditText.getText().length());
+            }
         });
     }
 

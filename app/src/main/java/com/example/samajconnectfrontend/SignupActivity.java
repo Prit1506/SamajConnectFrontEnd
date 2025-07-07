@@ -6,11 +6,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.method.HideReturnsTransformationMethod;
+import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -49,6 +52,10 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
     private Spinner userTypeSpinner; // Hidden spinner for compatibility
     private TextView userTypeDisplayTextView, textViewLogin; // Display TextView from XML
     private EditText nameEditText, emailEditText, passwordEditText, confirmPasswordEditText;
+    private ImageView imageViewTogglePassword;
+    private ImageView imageViewToggleConfirmPassword;
+    private boolean isPasswordVisible = false;
+    private boolean isConfirmPasswordVisible = false;
     private Button registerButton;
     private LinearLayout dynamicFieldsLayout, adminFieldsLayout, samajSearchLayout;
 
@@ -133,10 +140,15 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
         samajRulesEditText = findViewById(R.id.editTextSamajRules);
         establishedDateEditText = findViewById(R.id.editTextEstablishedDate);
 
+        imageViewTogglePassword = findViewById(R.id.imageViewTogglePassword);
+        imageViewToggleConfirmPassword = findViewById(R.id.imageViewToggleConfirmPassword);
+
+
         // Setup RecyclerView
         suggestionsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         suggestionAdapter = new SamajSuggestionAdapter(filteredSamajs, this);
         suggestionsRecyclerView.setAdapter(suggestionAdapter);
+
 
         textViewLogin = findViewById(R.id.textViewLogin);
         textViewLogin.setOnClickListener(v -> {
@@ -147,6 +159,59 @@ public class SignupActivity extends AppCompatActivity implements SamajSuggestion
 
         // Initially hide all dynamic elements
         resetToInitialState();
+        setupPasswordToggle();
+    }
+
+    private void setupPasswordToggle() {
+        // Password field toggle
+        imageViewTogglePassword.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                togglePasswordVisibility(passwordEditText, imageViewTogglePassword,
+                        isPasswordVisible, new PasswordToggleCallback() {
+                            @Override
+                            public void onToggle(boolean isVisible) {
+                                isPasswordVisible = isVisible;
+                            }
+                        });
+            }
+        });
+
+        // Confirm password field toggle
+        imageViewToggleConfirmPassword.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                togglePasswordVisibility(confirmPasswordEditText, imageViewToggleConfirmPassword,
+                        isConfirmPasswordVisible, new PasswordToggleCallback() {
+                            @Override
+                            public void onToggle(boolean isVisible) {
+                                isConfirmPasswordVisible = isVisible;
+                            }
+                        });
+            }
+        });
+    }
+
+    private void togglePasswordVisibility(EditText editText, ImageView toggleIcon,
+                                          boolean currentVisibility, PasswordToggleCallback callback) {
+        if (currentVisibility) {
+            // Hide password
+            editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+            toggleIcon.setImageResource(R.drawable.ic_eye_off);
+            callback.onToggle(false);
+        } else {
+            // Show password
+            editText.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
+            toggleIcon.setImageResource(R.drawable.ic_eye_on);
+            callback.onToggle(true);
+        }
+
+        // Move cursor to end
+        editText.setSelection(editText.getText().length());
+    }
+
+    private interface PasswordToggleCallback {
+        void onToggle(boolean isVisible);
     }
 
     private void resetToInitialState() {

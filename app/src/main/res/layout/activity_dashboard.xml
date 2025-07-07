@@ -194,7 +194,7 @@
                                 android:layout_width="85dp"
                                 android:layout_height="65dp"
                                 android:layout_margin="8dp"
-                                android:src="@drawable/member"
+                                android:src="@drawable/people"
                                 android:layout_gravity="center"/>
 
                             <TextView
@@ -227,7 +227,7 @@
                     android:drawableEnd="@drawable/search_icon"
                     android:elevation="3dp"
                     android:ems="10"
-                    android:hint="Search..."
+                    android:hint="Name, Email, Phone or Address"
                     android:inputType="textPersonName"
                     android:paddingStart="16dp"
                     android:paddingEnd="4dp"

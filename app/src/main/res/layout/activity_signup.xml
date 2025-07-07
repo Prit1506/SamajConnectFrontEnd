@@ -187,7 +187,6 @@
                 app:autoSizeMaxTextSize="18sp"
                 app:autoSizeMinTextSize="14sp"
                 app:autoSizeTextType="uniform" />
-            <!-- Add this code after the Confirm Password field and before the Dynamic Container -->
 
             <!-- Gender Label -->
             <TextView
@@ -253,6 +252,7 @@
                     app:autoSizeTextType="uniform" />
 
             </RadioGroup>
+
             <!-- Password Label -->
             <TextView
                 android:id="@+id/textView5"
@@ -267,23 +267,44 @@
                 app:autoSizeMinTextSize="16sp"
                 app:autoSizeTextType="uniform" />
 
-            <!-- Password Input -->
-            <EditText
-                android:id="@+id/editTextText1"
+            <!-- Password Input Container -->
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/input_height"
                 android:layout_marginTop="@dimen/signup_input_margin_top"
-                android:background="@drawable/edittext_background"
-                android:ems="10"
-                android:hint="Enter your Password"
-                android:inputType="textPassword"
-                android:padding="@dimen/input_padding"
-                android:textSize="@dimen/input_text_size"
-                app:autoSizeMaxTextSize="18sp"
-                app:autoSizeMinTextSize="14sp"
-                app:autoSizeTextType="uniform" />
+                android:background="@drawable/edittext_background">
 
-            <!-- Retype Password Label -->
+                <EditText
+                    android:id="@+id/editTextText1"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
+                    android:ems="10"
+                    android:hint="Enter your Password"
+                    android:inputType="textPassword"
+                    android:padding="@dimen/input_padding"
+                    android:paddingEnd="48dp"
+                    android:textSize="@dimen/input_text_size"
+                    app:autoSizeMaxTextSize="18sp"
+                    app:autoSizeMinTextSize="14sp"
+                    app:autoSizeTextType="uniform" />
+
+                <ImageView
+                    android:id="@+id/imageViewTogglePassword"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:src="@drawable/ic_eye_off"
+                    android:contentDescription="Toggle password visibility" />
+
+            </RelativeLayout>
+
+            <!-- Confirm Password Label -->
             <TextView
                 android:id="@+id/textView7"
                 android:layout_width="match_parent"
@@ -297,21 +318,42 @@
                 app:autoSizeMinTextSize="16sp"
                 app:autoSizeTextType="uniform" />
 
-            <!-- Retype Password Input -->
-            <EditText
-                android:id="@+id/editTextText3"
+            <!-- Confirm Password Input Container -->
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/input_height"
                 android:layout_marginTop="@dimen/signup_input_margin_top"
-                android:background="@drawable/edittext_background"
-                android:ems="10"
-                android:hint="Confirm Your Password"
-                android:inputType="textPassword"
-                android:padding="@dimen/input_padding"
-                android:textSize="@dimen/input_text_size"
-                app:autoSizeMaxTextSize="18sp"
-                app:autoSizeMinTextSize="14sp"
-                app:autoSizeTextType="uniform" />
+                android:background="@drawable/edittext_background">
+
+                <EditText
+                    android:id="@+id/editTextText3"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
+                    android:ems="10"
+                    android:hint="Confirm Your Password"
+                    android:inputType="textPassword"
+                    android:padding="@dimen/input_padding"
+                    android:paddingEnd="48dp"
+                    android:textSize="@dimen/input_text_size"
+                    app:autoSizeMaxTextSize="18sp"
+                    app:autoSizeMinTextSize="14sp"
+                    app:autoSizeTextType="uniform" />
+
+                <ImageView
+                    android:id="@+id/imageViewToggleConfirmPassword"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:src="@drawable/ic_eye_off"
+                    android:contentDescription="Toggle confirm password visibility" />
+
+            </RelativeLayout>
 
             <!-- Dynamic Container for Admin specific fields -->
             <LinearLayout
@@ -444,11 +486,8 @@
                 app:autoSizeMinTextSize="16sp"
                 app:autoSizeTextType="uniform" />
 
-
         </LinearLayout>
 
     </ScrollView>
-
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

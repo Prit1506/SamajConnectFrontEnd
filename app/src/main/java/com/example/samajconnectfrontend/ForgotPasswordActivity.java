@@ -26,6 +26,7 @@ public class ForgotPasswordActivity extends AppCompatActivity {
 
     RequestQueue requestQueue;
     boolean otpSent = false;
+    boolean requestInProgress = false; // Track if a request is currently being processed
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +63,17 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             return;
         }
 
+        // Prevent multiple requests
+        if (requestInProgress) {
+            Toast.makeText(this, "Please wait, sending OTP...", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Disable button and show loading state
+        requestInProgress = true;
+        actionButton.setEnabled(false);
+        actionButton.setText("Sending OTP...");
+
         JSONObject requestBody = new JSONObject();
         try {
             requestBody.put("email", email);
@@ -74,16 +86,26 @@ public class ForgotPasswordActivity extends AppCompatActivity {
                 FORGOT_PASSWORD_URL,
                 requestBody,
                 response -> {
-                    Toast.makeText(this, "OTP sent successfully!", Toast.LENGTH_SHORT).show();
+                    // Reset request state
+                    requestInProgress = false;
+                    actionButton.setEnabled(true);
+
+                    Toast.makeText(this, "OTP sent successfully to your email! Please check your inbox.", Toast.LENGTH_LONG).show();
 
                     // Enable fields and change button behavior
                     otpSent = true;
+                    emailInput.setEnabled(false); // Disable email input to prevent changes
                     otpInput.setEnabled(true);
                     newPasswordInput.setEnabled(true);
                     actionButton.setText("Reset Password");
                 },
                 error -> {
-                    Toast.makeText(this, "Failed to send OTP. Try again." + error.toString(), Toast.LENGTH_SHORT).show();
+                    // Reset request state on error
+                    requestInProgress = false;
+                    actionButton.setEnabled(true);
+                    actionButton.setText("Send OTP");
+
+                    Toast.makeText(this, "Failed to send OTP. Please try again.", Toast.LENGTH_SHORT).show();
                 }
         );
 
@@ -97,9 +119,20 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         String newPassword = newPasswordInput.getText().toString().trim();
 
         if (otp.isEmpty() || newPassword.isEmpty()) {
-            Toast.makeText(this, "Enter OTP and new password", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please enter both OTP and new password", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        // Prevent multiple requests
+        if (requestInProgress) {
+            Toast.makeText(this, "Please wait, resetting password...", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Disable button and show loading state
+        requestInProgress = true;
+        actionButton.setEnabled(false);
+        actionButton.setText("Resetting Password...");
 
         JSONObject requestBody = new JSONObject();
         try {
@@ -115,11 +148,16 @@ public class ForgotPasswordActivity extends AppCompatActivity {
                 RESET_PASSWORD_URL,
                 requestBody,
                 response -> {
-                    Toast.makeText(this, "Password reset successful!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Password reset successful! You can now login with your new password.", Toast.LENGTH_LONG).show();
                     finish(); // or redirect to login page
                 },
                 error -> {
-                    Toast.makeText(this, "Failed to reset password", Toast.LENGTH_SHORT).show();
+                    // Reset request state on error
+                    requestInProgress = false;
+                    actionButton.setEnabled(true);
+                    actionButton.setText("Reset Password");
+
+                    Toast.makeText(this, "Failed to reset password. Please check your OTP and try again.", Toast.LENGTH_SHORT).show();
                 }
         );
 
