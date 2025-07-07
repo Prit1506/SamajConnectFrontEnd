@@ -69,13 +69,9 @@ public class MemberAdapter extends RecyclerView.Adapter<MemberAdapter.MemberView
         // Set click listeners
         holder.itemView.setOnClickListener(v -> {
             // Handle member item click
-            Toast.makeText(context, "Clicked on " + member.getName(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, member.getName(), Toast.LENGTH_SHORT).show();
         });
 
-        holder.ivMenuAction.setOnClickListener(v -> {
-            // Handle menu action click
-            showMemberOptions(member);
-        });
     }
 
     @Override
@@ -118,7 +114,6 @@ public class MemberAdapter extends RecyclerView.Adapter<MemberAdapter.MemberView
     static class MemberViewHolder extends RecyclerView.ViewHolder {
         CircleImageView ivProfileImage;
         TextView tvMemberName, tvEmail, tvPhone, tvGender, tvAddress, tvJoinedDate, tvAdminBadge;
-        ImageView ivMenuAction;
 
         public MemberViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -130,7 +125,6 @@ public class MemberAdapter extends RecyclerView.Adapter<MemberAdapter.MemberView
             tvAddress = itemView.findViewById(R.id.tvAddress);
             tvJoinedDate = itemView.findViewById(R.id.tvJoinedDate);
             tvAdminBadge = itemView.findViewById(R.id.tvAdminBadge);
-            ivMenuAction = itemView.findViewById(R.id.ivMenuAction);
         }
     }
 }

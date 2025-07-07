@@ -202,7 +202,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginBottom="4dp"
-                                android:text="Members"
+                                android:text="Family"
                                 android:textAlignment="center"
                                 android:textColor="@color/white"
                                 android:textStyle="bold|italic" />
@@ -471,8 +471,8 @@
 
                             <androidx.constraintlayout.widget.ConstraintLayout
                                 android:id="@+id/Memberlayout"
-                                android:layout_width="65dp"
-                                android:layout_height="65dp"
+                                android:layout_width="80dp"
+                                android:layout_height="80dp"
                                 android:layout_gravity="center"
                                 android:background="#1db7ae">
 
@@ -498,7 +498,7 @@
                                 android:textStyle="bold" />
                         </LinearLayout>
 
-                        <LinearLayout
+                        <!--<LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -530,7 +530,7 @@
                                 android:textAlignment="center"
                                 android:textColor="#2e3d6d"
                                 android:textStyle="bold" />
-                        </LinearLayout>
+                        </LinearLayout>-->
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -539,8 +539,8 @@
                             android:orientation="vertical">
 
                             <androidx.constraintlayout.widget.ConstraintLayout
-                                android:layout_width="65dp"
-                                android:layout_height="65dp"
+                                android:layout_width="80dp"
+                                android:layout_height="80dp"
                                 android:layout_gravity="center"
                                 android:background="#1db7ae">
 
@@ -575,8 +575,8 @@
                             android:orientation="vertical">
 
                             <androidx.constraintlayout.widget.ConstraintLayout
-                                android:layout_width="65dp"
-                                android:layout_height="65dp"
+                                android:layout_width="80dp"
+                                android:layout_height="80dp"
                                 android:layout_gravity="center"
                                 android:background="#E00000">
 
