@@ -58,7 +58,7 @@ public class DashboardActivity extends AppCompatActivity implements SearchManage
 
     private TextView userNameTextView, samajNameTextView, profileTextView;
     private ImageView profileImageView;
-    private LinearLayout eventsLinearLayout, membersLinearLayout, logoutLinearLayout ;
+    private LinearLayout eventsLinearLayout, membersLinearLayout, logoutLinearLayout, aboutLinearLayout;
     private ConstraintLayout memberlist;
     private SwipeRefreshLayout swipeRefreshLayout;
     private ScrollView mainScrollView;
@@ -126,6 +126,7 @@ public class DashboardActivity extends AppCompatActivity implements SearchManage
         logoutLinearLayout = findViewById(R.id.logoutLinearLayout);
         memberlist = findViewById(R.id.Memberlayout);
         membersLinearLayout = findViewById(R.id.membersLinearLayout);
+        aboutLinearLayout = findViewById(R.id.aboutLinearLayout);
 
         eventsLinearLayout.setOnClickListener(view ->
                 startActivity(new Intent(DashboardActivity.this, EventActivity.class)));
@@ -140,6 +141,9 @@ public class DashboardActivity extends AppCompatActivity implements SearchManage
         logoutLinearLayout.setOnClickListener(view -> showLogoutDialog());
         memberlist.setOnClickListener(view ->
                 startActivity(new Intent(DashboardActivity.this, MemberListActivity.class)));
+
+        aboutLinearLayout.setOnClickListener(view ->
+                startActivity(new Intent(DashboardActivity.this, AboutActivity.class)));
     }
 
     private void setupSearchFunctionality() {
